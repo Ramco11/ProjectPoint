@@ -6,15 +6,15 @@ if (
   !config ||
   !config.SUPABASE_URL ||
   !config.SUPABASE_ANON_KEY ||
-  config.SUPABASE_URL.startsWith("PASTE_") ||
-  config.SUPABASE_ANON_KEY.startsWith("PASTE_")
+  config.SUPABASE_URL.includes("PASTE_") ||
+  config.SUPABASE_ANON_KEY.includes("PASTE_")
 ) {
   document.body.innerHTML = `
     <main style="padding:30px;font-family:system-ui">
       <h1>Configuration required</h1>
       <p>
         Open config.js and add your Supabase project URL
-        and publishable key.
+        and browser-safe publishable key.
       </p>
     </main>
   `;
@@ -22,22 +22,27 @@ if (
   throw new Error("Missing Supabase configuration");
 }
 
-if (typeof supabase === "undefined") {
+if (typeof window.supabase === "undefined") {
   document.body.innerHTML = `
     <main style="padding:30px;font-family:system-ui">
       <h1>Supabase library not loaded</h1>
-      <p>
-        Check the Supabase script tag in index.html.
-      </p>
+      <p>Check the Supabase CDN script in index.html.</p>
     </main>
   `;
 
   throw new Error("Supabase library not loaded");
 }
 
-const database = supabase.createClient(
+const database = window.supabase.createClient(
   config.SUPABASE_URL,
-  config.SUPABASE_ANON_KEY
+  config.SUPABASE_ANON_KEY,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  }
 );
 
 const navigationPages = [
@@ -56,12 +61,12 @@ const navigationPages = [
 const recordPrefixes = {
   "Change Orders": "CO",
   "Payment Applications": "PA",
-  "RFIs": "RFI",
+  RFIs: "RFI",
   "Site Instructions": "SI",
-  "Submittals": "SUB",
+  Submittals: "SUB",
   "Contract Documents": "DOC",
   "Claims & Notices": "CLM",
-  "Closeout": "CLS"
+  Closeout: "CLS"
 };
 
 const recordStatuses = [
@@ -80,6 +85,14 @@ const recordStatuses = [
   "Closed"
 ];
 
+const teamRoles = [
+  "owner",
+  "admin",
+  "manager",
+  "reviewer",
+  "viewer"
+];
+
 let currentUser = null;
 let projects = [];
 let currentProject = null;
@@ -88,7 +101,7 @@ let activePage = "Dashboard";
 let editingRecord = null;
 let modalMode = null;
 
-const select = function (selector) {
+const $ = function (selector) {
   return document.querySelector(selector);
 };
 
@@ -96,7 +109,7 @@ function escapeHtml(value) {
   return String(value ?? "").replace(
     /[&<>"']/g,
     function (character) {
-      const characters = {
+      const replacements = {
         "&": "&amp;",
         "<": "&lt;",
         ">": "&gt;",
@@ -104,7 +117,7 @@ function escapeHtml(value) {
         "'": "&#39;"
       };
 
-      return characters[character];
+      return replacements[character];
     }
   );
 }
@@ -135,29 +148,15 @@ function formatDate(value) {
   }).format(date);
 }
 
-function generateUuid() {
-  if (
-    window.crypto &&
-    typeof window.crypto.randomUUID === "function"
-  ) {
-    return window.crypto.randomUUID();
-  }
-
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
-    .replace(/[xy]/g, function (character) {
-      const random = Math.random() * 16 | 0;
-
-      const value =
-        character === "x"
-          ? random
-          : random & 0x3 | 0x8;
-
-      return value.toString(16);
-    });
+function roleLabel(role) {
+  return (
+    role.charAt(0).toUpperCase() +
+    role.slice(1)
+  );
 }
 
 function showToast(message) {
-  const toast = select("#toast");
+  const toast = $("#toast");
 
   if (!toast) {
     return;
@@ -168,22 +167,24 @@ function showToast(message) {
 
   window.setTimeout(function () {
     toast.classList.remove("show");
-  }, 2500);
+  }, 2800);
 }
 
-function setAuthMessage(message, isError = false) {
-  const messageElement = select("#authMessage");
+function setAuthMessage(
+  message,
+  isError = false
+) {
+  const element = $("#authMessage");
 
-  if (!messageElement) {
+  if (!element) {
     return;
   }
 
-  messageElement.textContent = message;
+  element.textContent = message;
 
-  messageElement.style.color =
-    isError
-      ? "#be123c"
-      : "#047857";
+  element.style.color = isError
+    ? "#be123c"
+    : "#047857";
 }
 
 function hasPermission(action) {
@@ -209,53 +210,18 @@ function hasPermission(action) {
   return action === "read";
 }
 
-function getStatusClass(status) {
-  if (
-    [
-      "Approved",
-      "Paid",
-      "Answered",
-      "Received",
-      "Resolved",
-      "Closed"
-    ].includes(status)
-  ) {
-    return "green";
-  }
-
-  if (
-    [
-      "Pending",
-      "Under review",
-      "Revise & resubmit"
-    ].includes(status)
-  ) {
-    return "amber";
-  }
-
-  if (status === "Rejected") {
-    return "red";
-  }
-
-  if (status === "Superseded") {
-    return "gray";
-  }
-
-  return "blue";
+function canManageTeam() {
+  return [
+    "owner",
+    "admin"
+  ].includes(currentRole);
 }
 
-function statusBadge(status) {
-  const safeStatus = status || "Pending";
-  const colourClass = getStatusClass(safeStatus);
-
-  return `
-    <span class="badge ${colourClass}">
-      ${escapeHtml(safeStatus)}
-    </span>
-  `;
-}
-
-function pageHeader(title, subtitle, actions = "") {
+function pageHeader(
+  title,
+  subtitle,
+  actions = ""
+) {
   return `
     <div class="page-head">
       <div>
@@ -270,7 +236,11 @@ function pageHeader(title, subtitle, actions = "") {
   `;
 }
 
-function metric(label, value, note) {
+function metric(
+  label,
+  value,
+  note
+) {
   return `
     <div class="metric">
       <small>${escapeHtml(label)}</small>
@@ -280,29 +250,25 @@ function metric(label, value, note) {
   `;
 }
 
-function openModal() {
-  const modal = select("#modal");
+function statusBadge(status) {
+  return `
+    <span class="badge">
+      ${escapeHtml(status || "Pending")}
+    </span>
+  `;
+}
 
-  if (modal) {
-    modal.classList.remove("hidden");
-  }
+function openModal() {
+  $("#modal")?.classList.remove("hidden");
 }
 
 function closeModal() {
-  const modal = select("#modal");
-  const form = select("#modalForm");
-  const fields = select("#modalFields");
+  $("#modal")?.classList.add("hidden");
 
-  if (modal) {
-    modal.classList.add("hidden");
-  }
+  $("#modalForm")?.reset();
 
-  if (form) {
-    form.reset();
-  }
-
-  if (fields) {
-    fields.innerHTML = "";
+  if ($("#modalFields")) {
+    $("#modalFields").innerHTML = "";
   }
 
   editingRecord = null;
@@ -319,21 +285,32 @@ async function bootApplication() {
     } = await database.auth.getSession();
 
     if (error) {
-      setAuthMessage(error.message, true);
+      setAuthMessage(
+        error.message,
+        true
+      );
     }
 
-    if (session && session.user) {
-      await enterApplication(session.user);
+    if (session?.user) {
+      await enterApplication(
+        session.user
+      );
     }
 
     database.auth.onAuthStateChange(
-      async function (event, session) {
-        if (session && session.user) {
+      async function (
+        event,
+        session
+      ) {
+        if (session?.user) {
           if (
             !currentUser ||
-            currentUser.id !== session.user.id
+            currentUser.id !==
+              session.user.id
           ) {
-            await enterApplication(session.user);
+            await enterApplication(
+              session.user
+            );
           }
         } else {
           leaveApplication();
@@ -353,11 +330,18 @@ async function bootApplication() {
 async function enterApplication(user) {
   currentUser = user;
 
-  select("#authView").classList.add("hidden");
-  select("#appView").classList.remove("hidden");
+  $("#authView")?.classList.add(
+    "hidden"
+  );
 
-  select("#userEmail").textContent =
-    user.email || "Signed-in user";
+  $("#appView")?.classList.remove(
+    "hidden"
+  );
+
+  if ($("#userEmail")) {
+    $("#userEmail").textContent =
+      user.email || "Signed-in user";
+  }
 
   await loadProjects();
 
@@ -373,14 +357,25 @@ function leaveApplication() {
   currentRole = "viewer";
   activePage = "Dashboard";
 
-  select("#appView").classList.add("hidden");
-  select("#authView").classList.remove("hidden");
+  $("#appView")?.classList.add(
+    "hidden"
+  );
 
-  select("#projectSelect").innerHTML = "";
-  select("#nav").innerHTML = "";
-  select("#content").innerHTML = "";
+  $("#authView")?.classList.remove(
+    "hidden"
+  );
 
-  setAuthMessage("");
+  if ($("#projectSelect")) {
+    $("#projectSelect").innerHTML = "";
+  }
+
+  if ($("#nav")) {
+    $("#nav").innerHTML = "";
+  }
+
+  if ($("#content")) {
+    $("#content").innerHTML = "";
+  }
 }
 
 async function loadProjects() {
@@ -394,56 +389,78 @@ async function loadProjects() {
   } = await database
     .from("project_members")
     .select("role,projects(*)")
-    .eq("user_id", currentUser.id);
+    .eq(
+      "user_id",
+      currentUser.id
+    );
 
   if (error) {
-    console.error(error);
+    console.error(
+      "Project loading error:",
+      error
+    );
+
     showToast(error.message);
+
+    projects = [];
+    currentProject = null;
+    currentRole = "viewer";
+
+    syncProjectControls();
+
     return;
   }
 
   projects = (data || [])
     .filter(function (membership) {
-      return Boolean(membership.projects);
+      return Boolean(
+        membership.projects
+      );
     })
     .map(function (membership) {
       return {
         ...membership.projects,
-        member_role: membership.role
+        member_role:
+          membership.role
       };
     });
 
   if (currentProject) {
-    const updatedProject = projects.find(
-      function (project) {
-        return project.id === currentProject.id;
-      }
-    );
-
-    currentProject = updatedProject || null;
+    currentProject =
+      projects.find(function (item) {
+        return (
+          item.id ===
+          currentProject.id
+        );
+      }) || null;
   }
 
   if (
     !currentProject &&
-    projects.length > 0
+    projects.length
   ) {
     currentProject = projects[0];
   }
 
   currentRole =
-    currentProject
-      ? currentProject.member_role || "viewer"
-      : "viewer";
+    currentProject?.member_role ||
+    "viewer";
 
-  select("#userRole").textContent =
-    currentRole;
+  if ($("#userRole")) {
+    $("#userRole").textContent =
+      currentRole;
+  }
 
   syncProjectControls();
 }
 
 function syncProjectControls() {
   const projectSelect =
-    select("#projectSelect");
+    $("#projectSelect");
+
+  if (!projectSelect) {
+    return;
+  }
 
   if (!projects.length) {
     projectSelect.innerHTML = `
@@ -452,67 +469,80 @@ function syncProjectControls() {
       </option>
     `;
 
-    select("#projectBtn").textContent =
-      "No project selected";
+    if ($("#projectBtn")) {
+      $("#projectBtn").textContent =
+        "No project selected";
+    }
 
-    select("#oneDriveBtn").href =
-      config.DEFAULT_ONEDRIVE_FOLDER;
+    if ($("#oneDriveBtn")) {
+      $("#oneDriveBtn").href =
+        config.DEFAULT_ONEDRIVE_FOLDER ||
+        "#";
+    }
 
     return;
   }
 
-  projectSelect.innerHTML = projects
-    .map(function (project) {
-      const selected =
-        currentProject &&
-        currentProject.id === project.id
-          ? "selected"
-          : "";
+  projectSelect.innerHTML =
+    projects
+      .map(function (item) {
+        const selected =
+          currentProject?.id === item.id
+            ? "selected"
+            : "";
 
-      return `
-        <option
-          value="${escapeHtml(project.id)}"
-          ${selected}
-        >
-          ${escapeHtml(project.name)}
-        </option>
-      `;
-    })
-    .join("");
+        return `
+          <option
+            value="${escapeHtml(item.id)}"
+            ${selected}
+          >
+            ${escapeHtml(item.name)}
+          </option>
+        `;
+      })
+      .join("");
 
-  select("#projectBtn").textContent =
-    currentProject
-      ? currentProject.name
-      : "Select project";
+  if ($("#projectBtn")) {
+    $("#projectBtn").textContent =
+      currentProject?.name ||
+      "Select project";
+  }
 
-  select("#oneDriveBtn").href =
-    currentProject &&
-    currentProject.onedrive_url
-      ? currentProject.onedrive_url
-      : config.DEFAULT_ONEDRIVE_FOLDER;
+  if ($("#oneDriveBtn")) {
+    $("#oneDriveBtn").href =
+      currentProject?.onedrive_url ||
+      config.DEFAULT_ONEDRIVE_FOLDER ||
+      "#";
+  }
 }
 
 function renderNavigation() {
-  const navigation = select("#nav");
+  const navigation =
+    $("#nav");
 
-  navigation.innerHTML = navigationPages
-    .map(function (page) {
-      const activeClass =
-        page === activePage
-          ? "active"
-          : "";
+  if (!navigation) {
+    return;
+  }
 
-      return `
-        <button
-          type="button"
-          class="nav-button ${activeClass}"
-          data-page="${escapeHtml(page)}"
-        >
-          ${escapeHtml(page)}
-        </button>
-      `;
-    })
-    .join("");
+  navigation.innerHTML =
+    navigationPages
+      .map(function (page) {
+        const activeClass =
+          page === activePage
+            ? "active"
+            : "";
+
+        return `
+          <button
+            type="button"
+            class="nav-button ${activeClass}"
+            data-page="${escapeHtml(page)}"
+          >
+            ${escapeHtml(page)}
+          </button>
+        `;
+      })
+      .join("");
 
   navigation
     .querySelectorAll("[data-page]")
@@ -527,7 +557,9 @@ function renderNavigation() {
 
           await renderPage();
 
-          document.body.classList.remove("menu");
+          document.body
+            .classList
+            .remove("menu");
         }
       );
     });
@@ -553,7 +585,7 @@ async function renderPage() {
 }
 
 function renderEmptyProjectsPage() {
-  select("#content").innerHTML =
+  $("#content").innerHTML =
     pageHeader(
       "Projects",
       "Create your first construction project.",
@@ -572,37 +604,42 @@ function renderEmptyProjectsPage() {
         <h2>No projects yet</h2>
 
         <p>
-          Create a project to begin managing
-          contract administration records.
+          Create a project to begin
+          managing contract
+          administration records.
         </p>
       </div>
     `;
 
-  select("#createFirstProject").addEventListener(
-    "click",
-    openProjectForm
-  );
+  $("#createFirstProject")
+    ?.addEventListener(
+      "click",
+      openProjectForm
+    );
 }
 
 async function getProjectRecords() {
-  if (!currentProject) {
-    return [];
-  }
-
   const {
     data,
     error
   } = await database
     .from("records")
     .select("*")
-    .eq("project_id", currentProject.id)
-    .order("created_at", {
-      ascending: false
-    });
+    .eq(
+      "project_id",
+      currentProject.id
+    )
+    .order(
+      "created_at",
+      {
+        ascending: false
+      }
+    );
 
   if (error) {
     console.error(error);
     showToast(error.message);
+
     return [];
   }
 
@@ -610,89 +647,93 @@ async function getProjectRecords() {
 }
 
 async function renderDashboard() {
-  const records = await getProjectRecords();
-
-  const approvedChanges = records
-    .filter(function (record) {
-      return (
-        record.type === "Change Orders" &&
-        record.status === "Approved"
-      );
-    })
-    .reduce(function (total, record) {
-      return total + Number(record.amount || 0);
-    }, 0);
-
-  const pendingChanges = records
-    .filter(function (record) {
-      return (
-        record.type === "Change Orders" &&
-        [
-          "Pending",
-          "Under review"
-        ].includes(record.status)
-      );
-    })
-    .reduce(function (total, record) {
-      return total + Number(record.amount || 0);
-    }, 0);
-
-  const certifiedAmount = records
-    .filter(function (record) {
-      return (
-        record.type === "Payment Applications" &&
-        [
-          "Approved",
-          "Paid"
-        ].includes(record.status)
-      );
-    })
-    .reduce(function (total, record) {
-      return total + Number(record.amount || 0);
-    }, 0);
-
-  const paidAmount = records
-    .filter(function (record) {
-      return (
-        record.type === "Payment Applications" &&
-        record.status === "Paid"
-      );
-    })
-    .reduce(function (total, record) {
-      return total + Number(record.amount || 0);
-    }, 0);
-
-  const openRfis = records.filter(
-    function (record) {
-      return (
-        record.type === "RFIs" &&
-        ![
-          "Answered",
-          "Resolved",
-          "Closed"
-        ].includes(record.status)
-      );
-    }
-  ).length;
+  const records =
+    await getProjectRecords();
 
   const originalValue =
-    Number(currentProject.contract_value) || 0;
+    Number(
+      currentProject.contract_value
+    ) || 0;
 
-  const revisedValue =
-    originalValue + approvedChanges;
+  const approvedChanges =
+    records
+      .filter(function (item) {
+        return (
+          item.type ===
+            "Change Orders" &&
+          item.status === "Approved"
+        );
+      })
+      .reduce(function (
+        sum,
+        item
+      ) {
+        return (
+          sum +
+          Number(item.amount || 0)
+        );
+      }, 0);
 
-  const upcomingDeadlines = records
-    .filter(function (record) {
-      return Boolean(record.due_date);
-    })
-    .sort(function (first, second) {
-      return first.due_date.localeCompare(
-        second.due_date
-      );
-    })
-    .slice(0, 6);
+  const pendingChanges =
+    records
+      .filter(function (item) {
+        return (
+          item.type ===
+            "Change Orders" &&
+          [
+            "Pending",
+            "Under review"
+          ].includes(item.status)
+        );
+      })
+      .reduce(function (
+        sum,
+        item
+      ) {
+        return (
+          sum +
+          Number(item.amount || 0)
+        );
+      }, 0);
 
-  select("#content").innerHTML =
+  const paidAmount =
+    records
+      .filter(function (item) {
+        return (
+          item.type ===
+            "Payment Applications" &&
+          item.status === "Paid"
+        );
+      })
+      .reduce(function (
+        sum,
+        item
+      ) {
+        return (
+          sum +
+          Number(item.amount || 0)
+        );
+      }, 0);
+
+  const deadlines =
+    records
+      .filter(function (item) {
+        return Boolean(
+          item.due_date
+        );
+      })
+      .sort(function (
+        first,
+        second
+      ) {
+        return first.due_date
+          .localeCompare(
+            second.due_date
+          );
+      })
+      .slice(0, 6);
+
+  $("#content").innerHTML =
     pageHeader(
       "Contract Dashboard",
       [
@@ -700,25 +741,11 @@ async function renderDashboard() {
         currentProject.contract_number
       ]
         .filter(Boolean)
-        .join(" · "),
-      `
-        ${
-          hasPermission("create")
-            ? `
-                <button
-                  type="button"
-                  class="primary"
-                  id="dashboardNewChange"
-                >
-                  + New change
-                </button>
-              `
-            : ""
-        }
-      `
+        .join(" · ")
     ) +
     `
       <div class="metrics">
+
         ${metric(
           "Original contract",
           formatMoney(originalValue),
@@ -727,55 +754,52 @@ async function renderDashboard() {
 
         ${metric(
           "Revised contract",
-          formatMoney(revisedValue),
+          formatMoney(
+            originalValue +
+            approvedChanges
+          ),
           "Approved changes included"
-        )}
-
-        ${metric(
-          "Certified to date",
-          formatMoney(certifiedAmount),
-          "Approved and paid applications"
         )}
 
         ${metric(
           "Paid to date",
           formatMoney(paidAmount),
-          "Payment applications paid"
+          "Paid applications"
         )}
+
+        ${metric(
+          "Pending changes",
+          formatMoney(pendingChanges),
+          "Awaiting approval"
+        )}
+
       </div>
 
       <div class="grid">
+
         <div class="card">
+
           <h3>Project information</h3>
-
-          <p>
-            <strong>Project:</strong>
-            ${escapeHtml(currentProject.name)}
-          </p>
-
-          <p>
-            <strong>Contract number:</strong>
-            ${escapeHtml(
-              currentProject.contract_number || "—"
-            )}
-          </p>
 
           <p>
             <strong>Location:</strong>
             ${escapeHtml(
-              currentProject.location || "—"
+              currentProject.location ||
+              "—"
             )}
           </p>
 
           <p>
-            <strong>Start date:</strong>
+            <strong>Start:</strong>
             ${escapeHtml(
-              formatDate(currentProject.start_date)
+              formatDate(
+                currentProject.start_date
+              )
             )}
           </p>
 
           <p>
-            <strong>Completion date:</strong>
+            <strong>Completion:</strong>
             ${escapeHtml(
               formatDate(
                 currentProject.completion_date
@@ -788,72 +812,49 @@ async function renderDashboard() {
             ${escapeHtml(currentRole)}
           </p>
 
-          <p>
-            <strong>Pending changes:</strong>
-            ${escapeHtml(
-              formatMoney(pendingChanges)
-            )}
-          </p>
-
-          <p>
-            <strong>Open RFIs:</strong>
-            ${escapeHtml(openRfis)}
-          </p>
         </div>
 
         <div class="card">
+
           <h3>Upcoming deadlines</h3>
 
           ${
-            upcomingDeadlines.length
-              ? upcomingDeadlines
-                  .map(function (record) {
+            deadlines.length
+              ? deadlines
+                  .map(function (item) {
                     return `
-                      <div class="deadline-item">
-                        <div>
-                          <strong>
-                            ${escapeHtml(record.reference)}
-                          </strong>
-
-                          <span>
-                            ${escapeHtml(record.title)}
-                          </span>
-                        </div>
-
-                        <time>
+                      <p>
+                        <strong>
                           ${escapeHtml(
-                            formatDate(record.due_date)
+                            item.reference
                           )}
-                        </time>
-                      </div>
+                        </strong>
+
+                        ·
+                        ${escapeHtml(
+                          item.title
+                        )}
+                        ·
+                        ${escapeHtml(
+                          formatDate(
+                            item.due_date
+                          )
+                        )}
+                      </p>
                     `;
                   })
                   .join("")
               : `
                   <p class="empty">
-                    No deadlines have been added.
+                    No deadlines
                   </p>
                 `
           }
+
         </div>
+
       </div>
     `;
-
-  const newChangeButton =
-    select("#dashboardNewChange");
-
-  if (newChangeButton) {
-    newChangeButton.addEventListener(
-      "click",
-      function () {
-        activePage = "Change Orders";
-
-        renderNavigation();
-
-        openRecordForm();
-      }
-    );
-  }
 }
 
 async function renderRecordsPage() {
@@ -863,124 +864,159 @@ async function renderRecordsPage() {
   } = await database
     .from("records")
     .select("*")
-    .eq("project_id", currentProject.id)
-    .eq("type", activePage)
-    .order("created_at", {
-      ascending: false
-    });
+    .eq(
+      "project_id",
+      currentProject.id
+    )
+    .eq(
+      "type",
+      activePage
+    )
+    .order(
+      "created_at",
+      {
+        ascending: false
+      }
+    );
 
   if (error) {
     console.error(error);
     showToast(error.message);
+
     return;
   }
 
   const records = data || [];
 
-  const addButton = hasPermission("create")
-    ? `
-        <button
-          type="button"
-          class="primary"
-          id="addRecord"
-        >
-          + New record
-        </button>
-      `
-    : "";
+  const addButton =
+    hasPermission("create")
+      ? `
+          <button
+            type="button"
+            class="primary"
+            id="addRecord"
+          >
+            + New record
+          </button>
+        `
+      : "";
 
-  const exportButton = hasPermission("export")
-    ? `
-        <button
-          type="button"
-          class="secondary"
-          id="exportCsv"
-        >
-          Export CSV
-        </button>
-      `
-    : "";
+  const exportButton =
+    hasPermission("export")
+      ? `
+          <button
+            type="button"
+            class="secondary"
+            id="exportCsv"
+          >
+            Export CSV
+          </button>
+        `
+      : "";
 
-  const rows = records
-    .map(function (record) {
-      const editButton =
-        hasPermission("update")
-          ? `
-              <button
-                type="button"
-                class="secondary edit-record"
-                data-id="${escapeHtml(record.id)}"
-              >
-                Edit
-              </button>
-            `
-          : "";
+  const rows =
+    records.length
+      ? records
+          .map(function (record) {
+            const editButton =
+              hasPermission("update")
+                ? `
+                    <button
+                      type="button"
+                      class="secondary edit-record"
+                      data-id="${escapeHtml(
+                        record.id
+                      )}"
+                    >
+                      Edit
+                    </button>
+                  `
+                : "";
 
-      const deleteButton =
-        hasPermission("delete")
-          ? `
-              <button
-                type="button"
-                class="danger delete-record"
-                data-id="${escapeHtml(record.id)}"
-              >
-                Delete
-              </button>
-            `
-          : "";
+            const deleteButton =
+              hasPermission("delete")
+                ? `
+                    <button
+                      type="button"
+                      class="danger delete-record"
+                      data-id="${escapeHtml(
+                        record.id
+                      )}"
+                    >
+                      Delete
+                    </button>
+                  `
+                : "";
 
-      return `
-        <tr>
-          <td class="record-reference">
-            ${escapeHtml(record.reference)}
-          </td>
+            return `
+              <tr>
 
-          <td>
-            ${escapeHtml(record.title)}
-          </td>
+                <td>
+                  ${escapeHtml(
+                    record.reference
+                  )}
+                </td>
 
-          <td>
-            ${
-              Number(record.amount)
-                ? escapeHtml(
-                    formatMoney(record.amount)
-                  )
-                : "—"
-            }
-          </td>
+                <td>
+                  ${escapeHtml(
+                    record.title
+                  )}
+                </td>
 
-          <td>
-            ${escapeHtml(
-              record.responsible_party || "—"
-            )}
-          </td>
+                <td>
+                  ${
+                    record.amount
+                      ? escapeHtml(
+                          formatMoney(
+                            record.amount
+                          )
+                        )
+                      : "—"
+                  }
+                </td>
 
-          <td>
-            ${statusBadge(record.status)}
-          </td>
+                <td>
+                  ${escapeHtml(
+                    record.responsible_party ||
+                    "—"
+                  )}
+                </td>
 
-          <td>
-            ${escapeHtml(
-              formatDate(record.due_date)
-            )}
-          </td>
+                <td>
+                  ${statusBadge(
+                    record.status
+                  )}
+                </td>
 
-          <td class="row-actions">
-            ${editButton}
-            ${deleteButton}
+                <td>
+                  ${escapeHtml(
+                    formatDate(
+                      record.due_date
+                    )
+                  )}
+                </td>
 
-            ${
-              !editButton && !deleteButton
-                ? "View only"
-                : ""
-            }
-          </td>
-        </tr>
-      `;
-    })
-    .join("");
+                <td class="row-actions">
+                  ${editButton}
+                  ${deleteButton}
+                </td>
 
-  select("#content").innerHTML =
+              </tr>
+            `;
+          })
+          .join("")
+      : `
+          <tr>
+            <td
+              colspan="7"
+              class="empty"
+            >
+              No records found.
+            </td>
+          </tr>
+        `;
+
+  $("#content").innerHTML =
     pageHeader(
       activePage,
       `Records for ${currentProject.name}`,
@@ -988,6 +1024,7 @@ async function renderRecordsPage() {
     ) +
     `
       <div class="toolbar">
+
         <input
           id="search"
           type="search"
@@ -995,10 +1032,13 @@ async function renderRecordsPage() {
         >
 
         ${exportButton}
+
       </div>
 
       <div class="card table-card">
+
         <table id="recordsTable">
+
           <thead>
             <tr>
               <th>Reference</th>
@@ -1012,59 +1052,57 @@ async function renderRecordsPage() {
           </thead>
 
           <tbody>
-            ${
-              rows ||
-              `
-                <tr>
-                  <td
-                    colspan="7"
-                    class="empty"
-                  >
-                    No records found.
-                  </td>
-                </tr>
-              `
-            }
+            ${rows}
           </tbody>
+
         </table>
+
       </div>
     `;
 
-  const addRecordButton =
-    select("#addRecord");
-
-  if (addRecordButton) {
-    addRecordButton.addEventListener(
+  $("#addRecord")
+    ?.addEventListener(
       "click",
       function () {
         openRecordForm();
       }
     );
-  }
 
-  const searchInput =
-    select("#search");
-
-  if (searchInput) {
-    searchInput.addEventListener(
+  $("#search")
+    ?.addEventListener(
       "input",
       function (event) {
-        filterRecords(event.target.value);
+        filterRecords(
+          event.target.value
+        );
       }
     );
-  }
+
+  $("#exportCsv")
+    ?.addEventListener(
+      "click",
+      function () {
+        exportCsv(records);
+      }
+    );
 
   document
-    .querySelectorAll(".edit-record")
+    .querySelectorAll(
+      ".edit-record"
+    )
     .forEach(function (button) {
       button.addEventListener(
         "click",
         function () {
-          const record = records.find(
-            function (item) {
-              return item.id === button.dataset.id;
-            }
-          );
+          const record =
+            records.find(
+              function (item) {
+                return (
+                  item.id ===
+                  button.dataset.id
+                );
+              }
+            );
 
           if (record) {
             openRecordForm(record);
@@ -1074,27 +1112,19 @@ async function renderRecordsPage() {
     });
 
   document
-    .querySelectorAll(".delete-record")
+    .querySelectorAll(
+      ".delete-record"
+    )
     .forEach(function (button) {
       button.addEventListener(
         "click",
         function () {
-          deleteRecord(button.dataset.id);
+          deleteRecord(
+            button.dataset.id
+          );
         }
       );
     });
-
-  const exportCsvButton =
-    select("#exportCsv");
-
-  if (exportCsvButton) {
-    exportCsvButton.addEventListener(
-      "click",
-      function () {
-        exportCsv(records);
-      }
-    );
-  }
 }
 
 function filterRecords(query) {
@@ -1103,9 +1133,12 @@ function filterRecords(query) {
       "#recordsTable tbody tr"
     )
     .forEach(function (row) {
-      const matches = row.innerText
-        .toLowerCase()
-        .includes(query.toLowerCase());
+      const matches =
+        row.innerText
+          .toLowerCase()
+          .includes(
+            query.toLowerCase()
+          );
 
       row.style.display =
         matches
@@ -1114,15 +1147,17 @@ function filterRecords(query) {
     });
 }
 
-function openRecordForm(record = null) {
-  const requiredPermission =
+function openRecordForm(
+  record = null
+) {
+  const permission =
     record
       ? "update"
       : "create";
 
-  if (!hasPermission(requiredPermission)) {
+  if (!hasPermission(permission)) {
     showToast(
-      "Your project role does not allow this action."
+      "Your role does not allow this action."
     );
 
     return;
@@ -1131,12 +1166,12 @@ function openRecordForm(record = null) {
   editingRecord = record;
   modalMode = "record";
 
-  select("#modalTitle").textContent =
+  $("#modalTitle").textContent =
     record
-      ? `Edit ${activePage} record`
-      : `New ${activePage} record`;
+      ? `Edit ${activePage}`
+      : `New ${activePage}`;
 
-  select("#modalFields").innerHTML = `
+  $("#modalFields").innerHTML = `
     <label class="field">
       Title
 
@@ -1145,7 +1180,7 @@ function openRecordForm(record = null) {
         required
         maxlength="250"
         value="${escapeHtml(
-          record ? record.title : ""
+          record?.title || ""
         )}"
       >
     </label>
@@ -1157,11 +1192,9 @@ function openRecordForm(record = null) {
         name="amount"
         type="number"
         step="0.01"
-        value="${
-          record
-            ? Number(record.amount || 0)
-            : 0
-        }"
+        value="${Number(
+          record?.amount || 0
+        )}"
       >
     </label>
 
@@ -1172,9 +1205,8 @@ function openRecordForm(record = null) {
         name="responsible_party"
         maxlength="150"
         value="${escapeHtml(
-          record
-            ? record.responsible_party || ""
-            : ""
+          record?.responsible_party ||
+          ""
         )}"
       >
     </label>
@@ -1186,8 +1218,7 @@ function openRecordForm(record = null) {
         ${recordStatuses
           .map(function (status) {
             const selected =
-              record &&
-              record.status === status
+              record?.status === status
                 ? "selected"
                 : "";
 
@@ -1211,9 +1242,7 @@ function openRecordForm(record = null) {
         name="due_date"
         type="date"
         value="${escapeHtml(
-          record
-            ? record.due_date || ""
-            : ""
+          record?.due_date || ""
         )}"
       >
     </label>
@@ -1226,64 +1255,60 @@ function openRecordForm(record = null) {
         rows="5"
         maxlength="5000"
       >${escapeHtml(
-        record
-          ? record.notes || ""
-          : ""
+        record?.notes || ""
       )}</textarea>
     </label>
   `;
 
   openModal();
 
-  const titleInput =
-    select('#modalForm [name="title"]');
-
-  if (titleInput) {
-    titleInput.focus();
-  }
+  $(
+    "#modalForm [name='title']"
+  )?.focus();
 }
 
 async function saveRecord(event) {
   event.preventDefault();
 
-  const requiredPermission =
-    editingRecord
-      ? "update"
-      : "create";
-
-  if (!hasPermission(requiredPermission)) {
+  if (!currentProject) {
     showToast(
-      "Your project role does not allow this action."
+      "Select a project first."
     );
 
     return;
   }
 
-  if (!currentProject) {
-    showToast("Select a project first.");
-    return;
-  }
+  const values =
+    Object.fromEntries(
+      new FormData(
+        event.currentTarget
+      ).entries()
+    );
 
-  const formData =
-    new FormData(event.currentTarget);
+  values.title =
+    String(
+      values.title || ""
+    ).trim();
 
-  const recordData =
-    Object.fromEntries(formData.entries());
+  values.amount =
+    Number(values.amount) || 0;
 
-  recordData.title =
-    recordData.title.trim();
+  values.responsible_party =
+    String(
+      values.responsible_party ||
+      ""
+    ).trim();
 
-  recordData.amount =
-    Number(recordData.amount) || 0;
+  values.notes =
+    String(
+      values.notes || ""
+    ).trim();
 
-  recordData.responsible_party =
-    recordData.responsible_party.trim();
+  if (!values.title) {
+    showToast(
+      "A title is required."
+    );
 
-  recordData.notes =
-    recordData.notes.trim();
-
-  if (!recordData.title) {
-    showToast("A record title is required.");
     return;
   }
 
@@ -1293,29 +1318,41 @@ async function saveRecord(event) {
     } = await database
       .from("records")
       .update({
-        title: recordData.title,
-        amount: recordData.amount,
+        title:
+          values.title,
+
+        amount:
+          values.amount,
+
         responsible_party:
-          recordData.responsible_party,
-        status: recordData.status,
+          values.responsible_party,
+
+        status:
+          values.status,
+
         due_date:
-          recordData.due_date || null,
-        notes: recordData.notes,
+          values.due_date || null,
+
+        notes:
+          values.notes,
+
         updated_at:
           new Date().toISOString()
       })
-      .eq("id", editingRecord.id)
-      .eq("project_id", currentProject.id);
+      .eq(
+        "id",
+        editingRecord.id
+      )
+      .eq(
+        "project_id",
+        currentProject.id
+      );
 
     if (error) {
-      console.error(error);
       showToast(error.message);
       return;
     }
   } else {
-    const prefix =
-      recordPrefixes[activePage] || "REC";
-
     const {
       data: reference,
       error: referenceError
@@ -1324,16 +1361,22 @@ async function saveRecord(event) {
       {
         p_project_id:
           currentProject.id,
+
         p_record_type:
           activePage,
+
         p_prefix:
-          prefix
+          recordPrefixes[
+            activePage
+          ] || "REC"
       }
     );
 
     if (referenceError) {
-      console.error(referenceError);
-      showToast(referenceError.message);
+      showToast(
+        referenceError.message
+      );
+
       return;
     }
 
@@ -1344,28 +1387,36 @@ async function saveRecord(event) {
       .insert({
         project_id:
           currentProject.id,
+
         type:
           activePage,
+
         reference:
           reference,
+
         title:
-          recordData.title,
+          values.title,
+
         amount:
-          recordData.amount,
+          values.amount,
+
         responsible_party:
-          recordData.responsible_party,
+          values.responsible_party,
+
         status:
-          recordData.status,
+          values.status,
+
         due_date:
-          recordData.due_date || null,
+          values.due_date || null,
+
         notes:
-          recordData.notes,
+          values.notes,
+
         created_by:
           currentUser.id
       });
 
     if (error) {
-      console.error(error);
       showToast(error.message);
       return;
     }
@@ -1385,18 +1436,21 @@ async function saveRecord(event) {
   );
 }
 
-async function deleteRecord(recordId) {
+async function deleteRecord(
+  recordId
+) {
   if (!hasPermission("delete")) {
     showToast(
-      "Your project role cannot delete records."
+      "Your role cannot delete records."
     );
 
     return;
   }
 
-  const confirmed = window.confirm(
-    "Delete this record permanently?"
-  );
+  const confirmed =
+    window.confirm(
+      "Delete this record permanently?"
+    );
 
   if (!confirmed) {
     return;
@@ -1408,10 +1462,12 @@ async function deleteRecord(recordId) {
     .from("records")
     .delete()
     .eq("id", recordId)
-    .eq("project_id", currentProject.id);
+    .eq(
+      "project_id",
+      currentProject.id
+    );
 
   if (error) {
-    console.error(error);
     showToast(error.message);
     return;
   }
@@ -1423,17 +1479,20 @@ async function deleteRecord(recordId) {
 
 function openProjectForm() {
   if (!currentUser) {
-    showToast("Sign in before creating a project.");
+    showToast(
+      "Sign in before creating a project."
+    );
+
     return;
   }
 
   modalMode = "project";
   editingRecord = null;
 
-  select("#modalTitle").textContent =
+  $("#modalTitle").textContent =
     "Create project";
 
-  select("#modalFields").innerHTML = `
+  $("#modalFields").innerHTML = `
     <label class="field">
       Project name
 
@@ -1498,7 +1557,8 @@ function openProjectForm() {
         name="onedrive_url"
         type="url"
         value="${escapeHtml(
-          config.DEFAULT_ONEDRIVE_FOLDER
+          config.DEFAULT_ONEDRIVE_FOLDER ||
+          ""
         )}"
       >
     </label>
@@ -1506,293 +1566,661 @@ function openProjectForm() {
 
   openModal();
 
-  const nameInput =
-    select('#modalForm [name="name"]');
-
-  if (nameInput) {
-    nameInput.focus();
-  }
+  $(
+    "#modalForm [name='name']"
+  )?.focus();
 }
 
 async function saveProject(event) {
   event.preventDefault();
 
   if (!currentUser) {
-    showToast("Sign in before creating a project.");
-    return;
-  }
-
-  const formData =
-    new FormData(event.currentTarget);
-
-  const projectData =
-    Object.fromEntries(formData.entries());
-
-  projectData.name =
-    projectData.name.trim();
-
-  projectData.contract_number =
-    projectData.contract_number.trim();
-
-  projectData.location =
-    projectData.location.trim();
-
-  projectData.contract_value =
-    Number(projectData.contract_value) || 0;
-
-  projectData.onedrive_url =
-    projectData.onedrive_url.trim() ||
-    config.DEFAULT_ONEDRIVE_FOLDER;
-
-  if (!projectData.name) {
-    showToast("Project name is required.");
-    return;
-  }
-
-  if (
-    projectData.start_date &&
-    projectData.completion_date &&
-    projectData.completion_date <
-      projectData.start_date
-  ) {
     showToast(
-      "Completion date cannot be earlier than the start date."
+      "Sign in before creating a project."
     );
 
     return;
   }
 
-  const projectId = generateUuid();
+  const submitButton =
+    event.currentTarget
+      .querySelector(
+        'button[type="submit"]'
+      );
 
-  const {
-    error: projectError
-  } = await database
-    .from("projects")
-    .insert({
-      id:
-        projectId,
-      name:
-        projectData.name,
-      contract_number:
-        projectData.contract_number,
-      location:
-        projectData.location,
-      contract_value:
-        projectData.contract_value,
-      start_date:
-        projectData.start_date || null,
-      completion_date:
-        projectData.completion_date || null,
-      onedrive_url:
-        projectData.onedrive_url,
-      created_by:
-        currentUser.id
-    });
+  if (submitButton) {
+    submitButton.disabled = true;
 
-  if (projectError) {
-    console.error(projectError);
-    showToast(projectError.message);
-    return;
+    submitButton.textContent =
+      "Saving...";
   }
 
-  const {
-    error: membershipError
-  } = await database
-    .from("project_members")
-    .insert({
-      project_id:
-        projectId,
-      user_id:
-        currentUser.id,
-      role:
-        "owner"
-    });
+  try {
+    const values =
+      Object.fromEntries(
+        new FormData(
+          event.currentTarget
+        ).entries()
+      );
 
-  if (membershipError) {
-    console.error(membershipError);
-    showToast(membershipError.message);
-    return;
+    const name =
+      String(
+        values.name || ""
+      ).trim();
+
+    const contractNumber =
+      String(
+        values.contract_number ||
+        ""
+      ).trim();
+
+    const location =
+      String(
+        values.location || ""
+      ).trim();
+
+    const contractValue =
+      Number(
+        values.contract_value
+      ) || 0;
+
+    const oneDriveUrl =
+      String(
+        values.onedrive_url ||
+        ""
+      ).trim() ||
+      config.DEFAULT_ONEDRIVE_FOLDER ||
+      null;
+
+    if (!name) {
+      showToast(
+        "Project name is required."
+      );
+
+      return;
+    }
+
+    if (
+      values.start_date &&
+      values.completion_date &&
+      values.completion_date <
+        values.start_date
+    ) {
+      showToast(
+        "Completion date cannot be earlier than the start date."
+      );
+
+      return;
+    }
+
+    const {
+      data: projectId,
+      error
+    } = await database.rpc(
+      "create_project_with_owner",
+      {
+        p_name:
+          name,
+
+        p_contract_number:
+          contractNumber || null,
+
+        p_location:
+          location || null,
+
+        p_contract_value:
+          contractValue,
+
+        p_start_date:
+          values.start_date ||
+          null,
+
+        p_completion_date:
+          values.completion_date ||
+          null,
+
+        p_onedrive_url:
+          oneDriveUrl
+      }
+    );
+
+    if (error) {
+      console.error(
+        "Project creation error:",
+        error
+      );
+
+      showToast(error.message);
+
+      return;
+    }
+
+    if (!projectId) {
+      showToast(
+        "The database did not return a project ID."
+      );
+
+      return;
+    }
+
+    closeModal();
+
+    currentProject = null;
+
+    await loadProjects();
+
+    currentProject =
+      projects.find(function (item) {
+        return (
+          item.id === projectId
+        );
+      }) ||
+      projects[0] ||
+      null;
+
+    currentRole =
+      currentProject?.member_role ||
+      "viewer";
+
+    if ($("#userRole")) {
+      $("#userRole").textContent =
+        currentRole;
+    }
+
+    activePage = "Dashboard";
+
+    syncProjectControls();
+    renderNavigation();
+
+    await renderPage();
+
+    showToast(
+      "Project created successfully."
+    );
+  } catch (error) {
+    console.error(error);
+
+    showToast(
+      error.message ||
+      "Unable to create project."
+    );
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+
+      submitButton.textContent =
+        "Save";
+    }
   }
-
-  closeModal();
-
-  currentProject = null;
-
-  await loadProjects();
-
-  activePage = "Dashboard";
-
-  renderNavigation();
-
-  await renderPage();
-
-  showToast("Project created");
 }
 
-async function renderTeamPage() {
-  const {
-    data: memberships,
-    error: membershipError
-  } = await database
-    .from("project_members")
-    .select("user_id,role")
-    .eq("project_id", currentProject.id);
+async function changeTeamMemberRole(
+  userId,
+  newRole
+) {
+  if (!currentProject) {
+    showToast(
+      "Select a project first."
+    );
 
-  if (membershipError) {
-    console.error(membershipError);
-    showToast(membershipError.message);
-    return;
+    return false;
   }
 
-  const userIds = (memberships || [])
-    .map(function (membership) {
-      return membership.user_id;
-    });
+  if (!canManageTeam()) {
+    showToast(
+      "Only owners and admins can change roles."
+    );
 
-  let profiles = [];
+    return false;
+  }
 
-  if (userIds.length > 0) {
-    const {
-      data: profileData,
-      error: profileError
-    } = await database
-      .from("profiles")
-      .select("id,email,full_name")
-      .in("id", userIds);
+  const {
+    error
+  } = await database.rpc(
+    "change_project_member_role",
+    {
+      p_project_id:
+        currentProject.id,
 
-    if (profileError) {
-      console.error(profileError);
-    } else {
-      profiles = profileData || [];
+      p_user_id:
+        userId,
+
+      p_new_role:
+        newRole
+    }
+  );
+
+  if (error) {
+    console.error(
+      "Role change error:",
+      error
+    );
+
+    showToast(error.message);
+
+    return false;
+  }
+
+  if (
+    userId === currentUser.id
+  ) {
+    currentRole =
+      newRole;
+
+    if ($("#userRole")) {
+      $("#userRole").textContent =
+        currentRole;
     }
   }
 
-  const rows = (memberships || [])
-    .map(function (membership) {
-      const profile = profiles.find(
-        function (item) {
-          return item.id === membership.user_id;
-        }
+  showToast(
+    "Team role updated."
+  );
+
+  await loadProjects();
+
+  return true;
+}
+
+async function renderTeamPage() {
+  if (!currentProject) {
+    return;
+  }
+
+  const {
+    data: memberships,
+    error
+  } = await database
+    .from("project_members")
+    .select("user_id,role")
+    .eq(
+      "project_id",
+      currentProject.id
+    );
+
+  if (error) {
+    console.error(
+      "Team loading error:",
+      error
+    );
+
+    showToast(error.message);
+
+    return;
+  }
+
+  const memberRows =
+    memberships || [];
+
+  const userIds =
+    memberRows.map(
+      function (membership) {
+        return membership.user_id;
+      }
+    );
+
+  let profiles = [];
+
+  if (userIds.length) {
+    const {
+      data,
+      error: profileError
+    } = await database
+      .from("profiles")
+      .select(
+        "id,email,full_name"
+      )
+      .in(
+        "id",
+        userIds
       );
 
-      return `
-        <tr>
-          <td>
-            ${escapeHtml(
-              profile
-                ? profile.full_name || "—"
-                : "—"
-            )}
-          </td>
+    if (profileError) {
+      console.error(
+        "Profile loading error:",
+        profileError
+      );
+    } else {
+      profiles = data || [];
+    }
+  }
 
-          <td>
-            ${escapeHtml(
-              profile
-                ? profile.email || "—"
-                : membership.user_id
-            )}
-          </td>
+  const ownerCount =
+    memberRows.filter(
+      function (membership) {
+        return (
+          membership.role === "owner"
+        );
+      }
+    ).length;
 
-          <td>
-            ${escapeHtml(membership.role)}
-          </td>
-        </tr>
-      `;
-    })
-    .join("");
+  const managementAllowed =
+    canManageTeam();
 
-  select("#content").innerHTML =
+  const rows =
+    memberRows.length
+      ? memberRows
+          .map(function (membership) {
+            const profile =
+              profiles.find(
+                function (item) {
+                  return (
+                    item.id ===
+                    membership.user_id
+                  );
+                }
+              );
+
+            const name =
+              profile?.full_name ||
+              "—";
+
+            const email =
+              profile?.email ||
+              membership.user_id;
+
+            const isCurrentUser =
+              membership.user_id ===
+              currentUser.id;
+
+            const isLastOwner =
+              membership.role === "owner" &&
+              ownerCount === 1;
+
+            let roleControl;
+
+            if (
+              managementAllowed &&
+              !isLastOwner
+            ) {
+              roleControl = `
+                <select
+                  class="team-role-select"
+                  data-user-id="${escapeHtml(
+                    membership.user_id
+                  )}"
+                  data-original-role="${escapeHtml(
+                    membership.role
+                  )}"
+                  aria-label="Project role for ${escapeHtml(
+                    email
+                  )}"
+                >
+                  ${teamRoles
+                    .map(function (role) {
+                      const selected =
+                        role ===
+                        membership.role
+                          ? "selected"
+                          : "";
+
+                      const ownerDisabled =
+                        currentRole === "admin" &&
+                        (
+                          role === "owner" ||
+                          membership.role ===
+                            "owner"
+                        )
+                          ? "disabled"
+                          : "";
+
+                      return `
+                        <option
+                          value="${role}"
+                          ${selected}
+                          ${ownerDisabled}
+                        >
+                          ${roleLabel(role)}
+                        </option>
+                      `;
+                    })
+                    .join("")}
+                </select>
+              `;
+            } else {
+              roleControl = `
+                <span class="badge">
+                  ${escapeHtml(
+                    roleLabel(
+                      membership.role
+                    )
+                  )}
+                </span>
+
+                ${
+                  isLastOwner
+                    ? `
+                        <small
+                          style="
+                            display:block;
+                            margin-top:6px;
+                            color:#64748b;
+                          "
+                        >
+                          Last project owner
+                        </small>
+                      `
+                    : ""
+                }
+              `;
+            }
+
+            return `
+              <tr>
+                <td>
+                  ${escapeHtml(name)}
+
+                  ${
+                    isCurrentUser
+                      ? `
+                          <span class="badge">
+                            You
+                          </span>
+                        `
+                      : ""
+                  }
+                </td>
+
+                <td>
+                  ${escapeHtml(email)}
+                </td>
+
+                <td>
+                  ${roleControl}
+                </td>
+              </tr>
+            `;
+          })
+          .join("")
+      : `
+          <tr>
+            <td
+              colspan="3"
+              class="empty"
+            >
+              No project members found.
+            </td>
+          </tr>
+        `;
+
+  $("#content").innerHTML =
     pageHeader(
       "Team",
       `Members of ${currentProject.name}`
     ) +
     `
+      <div class="card">
+
+        <div class="team-heading">
+
+          <div>
+            <h3>Project Team</h3>
+
+            <p>
+              Manage project access
+              and assigned roles.
+            </p>
+          </div>
+
+          <span class="badge">
+            Your role:
+            ${escapeHtml(
+              roleLabel(currentRole)
+            )}
+          </span>
+
+        </div>
+
+      </div>
+
       <div class="card table-card">
+
         <table>
+
           <thead>
             <tr>
               <th>Name</th>
-              <th>Email or User ID</th>
-              <th>Project role</th>
+              <th>Email</th>
+              <th>Role</th>
             </tr>
           </thead>
 
           <tbody>
-            ${
-              rows ||
-              `
-                <tr>
-                  <td
-                    colspan="3"
-                    class="empty"
-                  >
-                    No project members found.
-                  </td>
-                </tr>
-              `
-            }
+            ${rows}
           </tbody>
+
         </table>
+
+      </div>
+
+      <div class="card">
+
+        <h3>Role permissions</h3>
+
+        <p>
+          <strong>Owner:</strong>
+          Full project and team control.
+        </p>
+
+        <p>
+          <strong>Admin:</strong>
+          Administrative control,
+          except owner-role management.
+        </p>
+
+        <p>
+          <strong>Manager:</strong>
+          Create and update project records.
+        </p>
+
+        <p>
+          <strong>Reviewer:</strong>
+          Review and update records.
+        </p>
+
+        <p>
+          <strong>Viewer:</strong>
+          Read-only project access.
+        </p>
+
       </div>
     `;
+
+  document
+    .querySelectorAll(
+      ".team-role-select"
+    )
+    .forEach(function (selector) {
+      selector.addEventListener(
+        "change",
+        async function () {
+          const userId =
+            selector.dataset.userId;
+
+          const newRole =
+            selector.value;
+
+          const oldRole =
+            selector.dataset
+              .originalRole;
+
+          const confirmed =
+            window.confirm(
+              `Change this team member from ${oldRole} to ${newRole}?`
+            );
+
+          if (!confirmed) {
+            selector.value =
+              oldRole;
+
+            return;
+          }
+
+          selector.disabled = true;
+
+          const changed =
+            await changeTeamMemberRole(
+              userId,
+              newRole
+            );
+
+          if (!changed) {
+            selector.value =
+              oldRole;
+
+            selector.disabled =
+              false;
+
+            return;
+          }
+
+          await renderTeamPage();
+        }
+      );
+    });
 }
 
 function exportCsv(records) {
-  if (!hasPermission("export")) {
-    showToast(
-      "Your project role cannot export records."
-    );
-
-    return;
-  }
-
-  function quoteCsv(value) {
+  const quote = function (value) {
     return (
       '"' +
       String(value ?? "")
-        .replaceAll('"', '""') +
+        .replaceAll(
+          '"',
+          '""'
+        ) +
       '"'
     );
-  }
+  };
 
-  const headings = [
-    "Reference",
-    "Title",
-    "Amount",
-    "Responsible Party",
-    "Status",
-    "Due Date",
-    "Notes"
-  ];
-
-  const rows = records.map(
-    function (record) {
+  const rows =
+    records.map(function (item) {
       return [
-        record.reference,
-        record.title,
-        record.amount,
-        record.responsible_party,
-        record.status,
-        record.due_date,
-        record.notes
+        item.reference,
+        item.title,
+        item.amount,
+        item.responsible_party,
+        item.status,
+        item.due_date,
+        item.notes
       ]
-        .map(quoteCsv)
+        .map(quote)
         .join(",");
-    }
-  );
+    });
 
   const csv = [
-    headings.join(","),
+    "Reference,Title,Amount,Responsible Party,Status,Due Date,Notes",
     ...rows
   ].join("\n");
 
-  const blob = new Blob(
-    [csv],
-    {
-      type:
-        "text/csv;charset=utf-8"
-    }
-  );
+  const blob =
+    new Blob(
+      [csv],
+      {
+        type:
+          "text/csv;charset=utf-8"
+      }
+    );
 
   const url =
     URL.createObjectURL(blob);
@@ -1818,201 +2246,230 @@ function exportCsv(records) {
   showToast("CSV exported");
 }
 
-const authForm = select("#authForm");
+$("#authForm")
+  ?.addEventListener(
+    "submit",
+    async function (event) {
+      event.preventDefault();
 
-authForm.addEventListener(
-  "submit",
-  async function (event) {
-    event.preventDefault();
+      setAuthMessage("");
 
-    setAuthMessage("");
+      const email =
+        $("#email").value.trim();
 
-    const email =
-      select("#email").value.trim();
+      const password =
+        $("#password").value;
 
-    const password =
-      select("#password").value;
+      if (!email || !password) {
+        setAuthMessage(
+          "Enter your email and password.",
+          true
+        );
 
-    if (!email || !password) {
+        return;
+      }
+
+      const {
+        error
+      } = await database.auth
+        .signInWithPassword({
+          email,
+          password
+        });
+
+      if (error) {
+        setAuthMessage(
+          error.message,
+          true
+        );
+
+        return;
+      }
+
       setAuthMessage(
-        "Enter your email and password.",
-        true
+        "Signed in successfully."
       );
-
-      return;
     }
+  );
 
-    const {
-      error
-    } = await database.auth
-      .signInWithPassword({
-        email: email,
-        password: password
-      });
+$("#signupBtn")
+  ?.addEventListener(
+    "click",
+    async function () {
+      setAuthMessage("");
 
-    if (error) {
-      setAuthMessage(error.message, true);
-      return;
-    }
+      const email =
+        $("#email").value.trim();
 
-    setAuthMessage(
-      "Signed in successfully."
-    );
-  }
-);
+      const password =
+        $("#password").value;
 
-select("#signupBtn").addEventListener(
-  "click",
-  async function () {
-    setAuthMessage("");
+      if (!email || !password) {
+        setAuthMessage(
+          "Enter an email and password first.",
+          true
+        );
 
-    const email =
-      select("#email").value.trim();
+        return;
+      }
 
-    const password =
-      select("#password").value;
+      if (password.length < 8) {
+        setAuthMessage(
+          "Password must contain at least 8 characters.",
+          true
+        );
 
-    if (!email || !password) {
+        return;
+      }
+
+      const {
+        error
+      } = await database.auth
+        .signUp({
+          email,
+          password
+        });
+
+      if (error) {
+        setAuthMessage(
+          error.message,
+          true
+        );
+
+        return;
+      }
+
       setAuthMessage(
-        "Enter an email and password first.",
-        true
+        "Account created. Check your email if confirmation is required."
       );
-
-      return;
     }
+  );
 
-    if (password.length < 8) {
-      setAuthMessage(
-        "Password must contain at least 8 characters.",
-        true
+$("#signoutBtn")
+  ?.addEventListener(
+    "click",
+    async function () {
+      const {
+        error
+      } = await database.auth
+        .signOut();
+
+      if (error) {
+        showToast(error.message);
+      }
+    }
+  );
+
+$("#newProjectBtn")
+  ?.addEventListener(
+    "click",
+    openProjectForm
+  );
+
+$("#projectBtn")
+  ?.addEventListener(
+    "click",
+    function () {
+      $("#projectSelect")?.focus();
+    }
+  );
+
+$("#projectSelect")
+  ?.addEventListener(
+    "change",
+    async function () {
+      const selected =
+        projects.find(
+          function (item) {
+            return (
+              item.id ===
+              $("#projectSelect").value
+            );
+          }
+        );
+
+      if (!selected) {
+        return;
+      }
+
+      currentProject = selected;
+
+      currentRole =
+        selected.member_role ||
+        "viewer";
+
+      if ($("#userRole")) {
+        $("#userRole").textContent =
+          currentRole;
+      }
+
+      activePage = "Dashboard";
+
+      syncProjectControls();
+      renderNavigation();
+
+      await renderPage();
+    }
+  );
+
+$("#menuBtn")
+  ?.addEventListener(
+    "click",
+    function () {
+      document.body.classList.toggle(
+        "menu"
       );
-
-      return;
     }
+  );
 
-    const {
-      error
-    } = await database.auth.signUp({
-      email: email,
-      password: password
-    });
+$("#modalClose")
+  ?.addEventListener(
+    "click",
+    closeModal
+  );
 
-    if (error) {
-      setAuthMessage(error.message, true);
-      return;
+$("#modalCancel")
+  ?.addEventListener(
+    "click",
+    closeModal
+  );
+
+$("#modal")
+  ?.addEventListener(
+    "click",
+    function (event) {
+      if (
+        event.target.id === "modal"
+      ) {
+        closeModal();
+      }
     }
+  );
 
-    setAuthMessage(
-      "Account created. Check your email if confirmation is required."
-    );
-  }
-);
+$("#modalForm")
+  ?.addEventListener(
+    "submit",
+    async function (event) {
+      if (
+        modalMode === "project"
+      ) {
+        await saveProject(event);
+        return;
+      }
 
-select("#signoutBtn").addEventListener(
-  "click",
-  async function () {
-    const {
-      error
-    } = await database.auth.signOut();
-
-    if (error) {
-      showToast(error.message);
+      await saveRecord(event);
     }
-  }
-);
-
-select("#newProjectBtn").addEventListener(
-  "click",
-  openProjectForm
-);
-
-select("#projectBtn").addEventListener(
-  "click",
-  function () {
-    select("#projectSelect").focus();
-  }
-);
-
-select("#projectSelect").addEventListener(
-  "change",
-  async function () {
-    const selectedProject =
-      projects.find(
-        function (project) {
-          return (
-            project.id ===
-            select("#projectSelect").value
-          );
-        }
-      );
-
-    if (!selectedProject) {
-      return;
-    }
-
-    currentProject =
-      selectedProject;
-
-    currentRole =
-      selectedProject.member_role ||
-      "viewer";
-
-    select("#userRole").textContent =
-      currentRole;
-
-    activePage = "Dashboard";
-
-    syncProjectControls();
-    renderNavigation();
-
-    await renderPage();
-  }
-);
-
-select("#menuBtn").addEventListener(
-  "click",
-  function () {
-    document.body.classList.toggle("menu");
-  }
-);
-
-select("#modalClose").addEventListener(
-  "click",
-  closeModal
-);
-
-select("#modalCancel").addEventListener(
-  "click",
-  closeModal
-);
-
-select("#modal").addEventListener(
-  "click",
-  function (event) {
-    if (event.target.id === "modal") {
-      closeModal();
-    }
-  }
-);
-
-select("#modalForm").addEventListener(
-  "submit",
-  async function (event) {
-    if (modalMode === "project") {
-      await saveProject(event);
-      return;
-    }
-
-    await saveRecord(event);
-  }
-);
+  );
 
 document.addEventListener(
   "keydown",
   function (event) {
     if (event.key === "Escape") {
       closeModal();
-      document.body.classList.remove("menu");
+
+      document.body
+        .classList
+        .remove("menu");
     }
   }
 );

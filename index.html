@@ -1,43 +1,87 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Contract Admin</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="description"
+    content="ProjectPoint construction contract administration platform"
+  >
+
+  <title>ProjectPoint | Contract Administration</title>
+
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
 </head>
 
 <body>
 
-  <div id="toast" class="toast"></div>
+  <div
+    id="toast"
+    class="toast"
+    role="status"
+    aria-live="polite"
+  ></div>
 
-  <section id="authView" class="auth">
-    <form id="authForm" class="auth-card">
 
-      <div class="logo">CA</div>
+  <section
+    id="authView"
+    class="auth"
+  >
 
-      <h1>Contract Administration</h1>
+    <form
+      id="authForm"
+      class="auth-card"
+      autocomplete="on"
+    >
 
-      <p>Secure project workspace</p>
+      <div class="logo">
+        PP
+      </div>
 
-      <label>
+      <h1>
+        ProjectPoint
+      </h1>
+
+      <p>
+        Construction Contract Administration
+      </p>
+
+      <label class="field">
         Email
+
         <input
           id="email"
+          name="email"
           type="email"
+          placeholder="you@example.com"
+          autocomplete="email"
           required
         >
       </label>
 
-      <label>
+
+      <label class="field">
         Password
+
         <input
           id="password"
+          name="password"
           type="password"
+          placeholder="Minimum 8 characters"
           minlength="8"
+          autocomplete="current-password"
           required
         >
       </label>
+
 
       <button
         class="primary"
@@ -45,6 +89,7 @@
       >
         Sign in
       </button>
+
 
       <button
         class="secondary"
@@ -54,9 +99,14 @@
         Create account
       </button>
 
-      <small id="authMessage"></small>
+
+      <small
+        id="authMessage"
+        aria-live="polite"
+      ></small>
 
     </form>
+
   </section>
 
 
@@ -65,29 +115,57 @@
     class="hidden"
   >
 
-    <aside>
+    <aside id="sidebar">
 
       <div class="brand">
-        <span>CA</span>
-        <b>Contract Admin</b>
+
+        <span>
+          PP
+        </span>
+
+        <div>
+          <strong>
+            ProjectPoint
+          </strong>
+
+          <small>
+            Contract Administration
+          </small>
+        </div>
+
       </div>
+
 
       <button
         id="projectBtn"
         class="project-button"
+        type="button"
       >
         Select project
       </button>
 
-      <nav id="nav"></nav>
+
+      <nav
+        id="nav"
+        aria-label="Project navigation"
+      ></nav>
+
 
       <div class="account">
+
+        <strong>
+          Signed in
+        </strong>
 
         <span id="userEmail"></span>
 
         <span id="userRole"></span>
 
-        <button id="signoutBtn">
+
+        <button
+          id="signoutBtn"
+          type="button"
+        >
           Sign out
         </button>
 
@@ -98,34 +176,65 @@
 
     <main>
 
-      <header>
+      <header class="topbar">
 
-        <button id="menuBtn">
+        <button
+          id="menuBtn"
+          type="button"
+          aria-label="Open navigation"
+        >
           ☰
         </button>
 
-        <select id="projectSelect">
-        </select>
 
-        <button
-          id="newProjectBtn"
-          class="primary"
-        >
-          + Project
-        </button>
+        <div class="project-selector">
 
-        <a
-          id="oneDriveBtn"
-          class="secondary"
-          target="_blank"
-          rel="noopener"
-        >
-          Project files
-        </a>
+          <label for="projectSelect">
+            Project
+          </label>
+
+          <select
+            id="projectSelect"
+            aria-label="Select project"
+          >
+            <option value="">
+              Loading projects...
+            </option>
+          </select>
+
+        </div>
+
+
+        <div class="header-actions">
+
+          <button
+            id="newProjectBtn"
+            class="primary"
+            type="button"
+          >
+            + Project
+          </button>
+
+
+          <a
+            id="oneDriveBtn"
+            class="secondary"
+            href="https://1drv.ms/f/c/3c877a39345f9ac3/IgBNv7qrg64HR4iJn5vaIeJbAROgo7RTmNZunIRpyFpmb0U?e=0cWd8C"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Project files
+          </a>
+
+        </div>
 
       </header>
 
-      <section id="content"></section>
+
+      <section
+        id="content"
+        tabindex="-1"
+      ></section>
 
     </main>
 
@@ -135,6 +244,9 @@
   <div
     id="modal"
     class="modal hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modalTitle"
   >
 
     <form
@@ -144,18 +256,24 @@
 
       <div class="modal-head">
 
-        <h2 id="modalTitle"></h2>
+        <h2 id="modalTitle">
+          Record
+        </h2>
+
 
         <button
           type="button"
           id="modalClose"
+          aria-label="Close dialog"
         >
           ×
         </button>
 
       </div>
 
+
       <div id="modalFields"></div>
+
 
       <div class="actions">
 
@@ -166,6 +284,7 @@
         >
           Cancel
         </button>
+
 
         <button
           class="primary"
@@ -182,10 +301,8 @@
 
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <script src="config.js"></script>
-
-  <script src="app.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
 
 </body>
 </html>
