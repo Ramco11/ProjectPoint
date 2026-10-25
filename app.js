@@ -1,1679 +1,2020 @@
 "use strict";
 
-const $ = (id) => document.getElementById(id);
+const config = window.APP_CONFIG;
 
-const STORAGE_KEY = "projectpoint-complete-v1";
+if (
+  !config ||
+  !config.SUPABASE_URL ||
+  !config.SUPABASE_ANON_KEY ||
+  config.SUPABASE_URL.startsWith("PASTE_") ||
+  config.SUPABASE_ANON_KEY.startsWith("PASTE_")
+) {
+  document.body.innerHTML = `
+    <main style="padding:30px;font-family:system-ui">
+      <h1>Configuration required</h1>
+      <p>
+        Open config.js and add your Supabase project URL
+        and publishable key.
+      </p>
+    </main>
+  `;
 
-const STATUSES = [
-  "Draft",
-  "Open",
-  "Submitted",
-  "Under Review",
-  "Pending",
-  "Ready to Issue",
-  "Answered",
-  "Responded",
-  "Closed",
-  "Void",
-  "Cancelled"
+  throw new Error("Missing Supabase configuration");
+}
+
+if (typeof supabase === "undefined") {
+  document.body.innerHTML = `
+    <main style="padding:30px;font-family:system-ui">
+      <h1>Supabase library not loaded</h1>
+      <p>
+        Check the Supabase script tag in index.html.
+      </p>
+    </main>
+  `;
+
+  throw new Error("Supabase library not loaded");
+}
+
+const database = supabase.createClient(
+  config.SUPABASE_URL,
+  config.SUPABASE_ANON_KEY
+);
+
+const navigationPages = [
+  "Dashboard",
+  "Change Orders",
+  "Payment Applications",
+  "RFIs",
+  "Site Instructions",
+  "Submittals",
+  "Contract Documents",
+  "Claims & Notices",
+  "Closeout",
+  "Team"
 ];
 
-let state = loadState();
-let session = null;
-let activeProjectId = state.projects[0].id;
-let pendingComments = [];
-let selectedAttachmentNames = [];
-let toastTimer;
+const recordPrefixes = {
+  "Change Orders": "CO",
+  "Payment Applications": "PA",
+  "RFIs": "RFI",
+  "Site Instructions": "SI",
+  "Submittals": "SUB",
+  "Contract Documents": "DOC",
+  "Claims & Notices": "CLM",
+  "Closeout": "CLS"
+};
 
-/* =========================================================
-   BASIC HELPERS
-========================================================= */
+const recordStatuses = [
+  "Pending",
+  "Open",
+  "Under review",
+  "Approved",
+  "Paid",
+  "Issued",
+  "Answered",
+  "Received",
+  "Resolved",
+  "Rejected",
+  "Revise & resubmit",
+  "Superseded",
+  "Closed"
+];
 
-function createId() {
-  if (window.crypto && typeof window.crypto.randomUUID === "function") {
-    return window.crypto.randomUUID();
-  }
+let currentUser = null;
+let projects = [];
+let currentProject = null;
+let currentRole = "viewer";
+let activePage = "Dashboard";
+let editingRecord = null;
+let modalMode = null;
 
-  return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+const select = function (selector) {
+  return document.querySelector(selector);
+};
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    function (character) {
+      const characters = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+      };
+
+      return characters[character];
+    }
+  );
 }
 
-function localDate() {
-  const now = new Date();
-  const offset = now.getTimezoneOffset() * 60000;
-
-  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
-}
-
-function timestamp() {
-  return new Date().toISOString();
+function formatMoney(value) {
+  return new Intl.NumberFormat("en-CA", {
+    style: "currency",
+    currency: "CAD",
+    maximumFractionDigits: 0
+  }).format(Number(value) || 0);
 }
 
 function formatDate(value) {
-  if (!value) return "-";
+  if (!value) {
+    return "—";
+  }
 
   const date = new Date(`${value}T00:00:00`);
 
-  if (Number.isNaN(date.getTime())) return value;
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
 
-  return date.toLocaleDateString("en-CA", {
+  return new Intl.DateTimeFormat("en-CA", {
     year: "numeric",
     month: "short",
     day: "2-digit"
-  });
+  }).format(date);
 }
 
-function formatDateTime(value) {
-  if (!value) return "-";
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) return value;
-
-  return date.toLocaleString("en-CA", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-}
-
-function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (character) => {
-    const entities = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#039;"
-    };
-
-    return entities[character];
-  });
-}
-
-function normalizeHeading(value) {
-  return String(value ?? "")
-    .replace(/^\uFEFF/, "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
-}
-
-function normalizeRfiNumber(value) {
-  return String(value ?? "")
-    .trim()
-    .replace(/\s+/g, "")
-    .toLowerCase();
-}
-
-function showToast(message, isError = false) {
-  clearTimeout(toastTimer);
-
-  $("toast").textContent = message;
-  $("toast").className = isError ? "toast show error" : "toast show";
-
-  toastTimer = setTimeout(() => {
-    $("toast").className = "toast";
-  }, 3200);
-}
-
-function openModal(id) {
-  $(id).classList.remove("hidden");
-  document.body.classList.add("modal-open");
-}
-
-function closeModal(id) {
-  $(id).classList.add("hidden");
-
-  if (!document.querySelector(".modal:not(.hidden)")) {
-    document.body.classList.remove("modal-open");
+function generateUuid() {
+  if (
+    window.crypto &&
+    typeof window.crypto.randomUUID === "function"
+  ) {
+    return window.crypto.randomUUID();
   }
+
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
+    .replace(/[xy]/g, function (character) {
+      const random = Math.random() * 16 | 0;
+
+      const value =
+        character === "x"
+          ? random
+          : random & 0x3 | 0x8;
+
+      return value.toString(16);
+    });
 }
 
-function currentProject() {
-  return state.projects.find((project) => project.id === activeProjectId);
+function showToast(message) {
+  const toast = select("#toast");
+
+  if (!toast) {
+    return;
+  }
+
+  toast.textContent = message;
+  toast.classList.add("show");
+
+  window.setTimeout(function () {
+    toast.classList.remove("show");
+  }, 2500);
 }
 
-function projectRfis() {
-  return state.rfis.filter((rfi) => rfi.projectId === activeProjectId);
+function setAuthMessage(message, isError = false) {
+  const messageElement = select("#authMessage");
+
+  if (!messageElement) {
+    return;
+  }
+
+  messageElement.textContent = message;
+
+  messageElement.style.color =
+    isError
+      ? "#be123c"
+      : "#047857";
 }
 
-function projectDailyReports() {
-  return state.dailyReports.filter(
-    (report) => report.projectId === activeProjectId
-  );
+function hasPermission(action) {
+  if (
+    currentRole === "owner" ||
+    currentRole === "admin"
+  ) {
+    return true;
+  }
+
+  if (currentRole === "manager") {
+    return action !== "delete";
+  }
+
+  if (currentRole === "reviewer") {
+    return [
+      "read",
+      "update",
+      "export"
+    ].includes(action);
+  }
+
+  return action === "read";
 }
 
-function projectSubmittals() {
-  return state.submittals.filter(
-    (submittal) => submittal.projectId === activeProjectId
-  );
+function getStatusClass(status) {
+  if (
+    [
+      "Approved",
+      "Paid",
+      "Answered",
+      "Received",
+      "Resolved",
+      "Closed"
+    ].includes(status)
+  ) {
+    return "green";
+  }
+
+  if (
+    [
+      "Pending",
+      "Under review",
+      "Revise & resubmit"
+    ].includes(status)
+  ) {
+    return "amber";
+  }
+
+  if (status === "Rejected") {
+    return "red";
+  }
+
+  if (status === "Superseded") {
+    return "gray";
+  }
+
+  return "blue";
 }
 
-function statusClass(status) {
-  const value = String(status ?? "").toLowerCase();
+function statusBadge(status) {
+  const safeStatus = status || "Pending";
+  const colourClass = getStatusClass(safeStatus);
 
-  if (value.includes("closed")) return "closed";
-  if (value.includes("responded")) return "responded";
-  if (value.includes("answered")) return "answered";
-  if (value.includes("approved")) return "approved";
-  if (value.includes("urgent")) return "urgent";
-  if (value.includes("cancel")) return "cancelled";
-  if (value.includes("void")) return "void";
-  if (value.includes("pending")) return "pending";
-  if (value.includes("review")) return "review";
-  if (value.includes("ready")) return "ready";
-
-  return "";
-}
-
-function statusPill(status) {
   return `
-    <span class="status-pill ${statusClass(status)}">
-      ${escapeHtml(status || "Draft")}
+    <span class="badge ${colourClass}">
+      ${escapeHtml(safeStatus)}
     </span>
   `;
 }
 
-function emptyRow(message, colspan) {
+function pageHeader(title, subtitle, actions = "") {
   return `
-    <tr>
-      <td class="empty-row" colspan="${colspan}">
-        ${escapeHtml(message)}
-      </td>
-    </tr>
+    <div class="page-head">
+      <div>
+        <h1>${escapeHtml(title)}</h1>
+        <p>${escapeHtml(subtitle)}</p>
+      </div>
+
+      <div class="page-actions">
+        ${actions}
+      </div>
+    </div>
   `;
 }
 
-/* =========================================================
-   DATABASE
-========================================================= */
-
-function defaultState() {
-  const projectId = createId();
-
-  return {
-    version: 1,
-
-    projects: [
-      {
-        id: projectId,
-        name: "My First Project",
-        number: "PP-001",
-        client: "",
-        createdAt: timestamp()
-      }
-    ],
-
-    rfis: [],
-    dailyReports: [],
-    submittals: []
-  };
+function metric(label, value, note) {
+  return `
+    <div class="metric">
+      <small>${escapeHtml(label)}</small>
+      <strong>${escapeHtml(value)}</strong>
+      <span>${escapeHtml(note)}</span>
+    </div>
+  `;
 }
 
-function loadState() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+function openModal() {
+  const modal = select("#modal");
 
-    if (
-      saved &&
-      Array.isArray(saved.projects) &&
-      saved.projects.length &&
-      Array.isArray(saved.rfis) &&
-      Array.isArray(saved.dailyReports) &&
-      Array.isArray(saved.submittals)
-    ) {
-      return saved;
-    }
-  } catch (error) {
-    console.error("ProjectPoint storage could not be read.", error);
+  if (modal) {
+    modal.classList.remove("hidden");
+  }
+}
+
+function closeModal() {
+  const modal = select("#modal");
+  const form = select("#modalForm");
+  const fields = select("#modalFields");
+
+  if (modal) {
+    modal.classList.add("hidden");
   }
 
-  return defaultState();
+  if (form) {
+    form.reset();
+  }
+
+  if (fields) {
+    fields.innerHTML = "";
+  }
+
+  editingRecord = null;
+  modalMode = null;
 }
 
-function saveState() {
+async function bootApplication() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    return true;
+    const {
+      data: {
+        session
+      },
+      error
+    } = await database.auth.getSession();
+
+    if (error) {
+      setAuthMessage(error.message, true);
+    }
+
+    if (session && session.user) {
+      await enterApplication(session.user);
+    }
+
+    database.auth.onAuthStateChange(
+      async function (event, session) {
+        if (session && session.user) {
+          if (
+            !currentUser ||
+            currentUser.id !== session.user.id
+          ) {
+            await enterApplication(session.user);
+          }
+        } else {
+          leaveApplication();
+        }
+      }
+    );
   } catch (error) {
     console.error(error);
-    showToast("Save failed. Browser storage may be unavailable.", true);
-    return false;
+
+    setAuthMessage(
+      "Unable to connect to Supabase.",
+      true
+    );
   }
 }
 
-/* =========================================================
-   LOGIN
-========================================================= */
+async function enterApplication(user) {
+  currentUser = user;
 
-$("loginForm").addEventListener("submit", (event) => {
-  event.preventDefault();
+  select("#authView").classList.add("hidden");
+  select("#appView").classList.remove("hidden");
 
-  const email = $("loginEmail").value.trim();
-  const password = $("loginPassword").value;
-  const role =
-    document.querySelector('input[name="loginRole"]:checked')?.value ||
-    "Consultant";
+  select("#userEmail").textContent =
+    user.email || "Signed-in user";
 
-  if (!email || !password) {
-    showToast("Enter an email address and password.", true);
+  await loadProjects();
+
+  renderNavigation();
+
+  await renderPage();
+}
+
+function leaveApplication() {
+  currentUser = null;
+  projects = [];
+  currentProject = null;
+  currentRole = "viewer";
+  activePage = "Dashboard";
+
+  select("#appView").classList.add("hidden");
+  select("#authView").classList.remove("hidden");
+
+  select("#projectSelect").innerHTML = "";
+  select("#nav").innerHTML = "";
+  select("#content").innerHTML = "";
+
+  setAuthMessage("");
+}
+
+async function loadProjects() {
+  if (!currentUser) {
     return;
   }
 
-  if (password !== "Project123") {
-    showToast("For this demo, use password Project123.", true);
+  const {
+    data,
+    error
+  } = await database
+    .from("project_members")
+    .select("role,projects(*)")
+    .eq("user_id", currentUser.id);
+
+  if (error) {
+    console.error(error);
+    showToast(error.message);
     return;
   }
 
-  session = {
-    email,
-    role
-  };
-
-  $("loginScreen").classList.add("hidden");
-  $("appShell").classList.remove("hidden");
-
-  $("userEmail").textContent = email;
-  $("userRole").textContent = role;
-  $("userInitials").textContent = email
-    .split("@")[0]
-    .split(/[._-]/)
-    .map((part) => part.charAt(0))
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() || "PP";
-
-  initializeWorkspace();
-  showToast(`Signed in as ${role}.`);
-});
-
-$("logoutButton").addEventListener("click", () => {
-  session = null;
-
-  $("appShell").classList.add("hidden");
-  $("loginScreen").classList.remove("hidden");
-
-  showPage("dashboard");
-});
-
-/* =========================================================
-   NAVIGATION
-========================================================= */
-
-function showPage(pageName) {
-  document.querySelectorAll(".page").forEach((page) => {
-    page.classList.remove("active-page");
-  });
-
-  document.querySelectorAll(".nav-button").forEach((button) => {
-    button.classList.toggle("active", button.dataset.page === pageName);
-  });
-
-  const pageMap = {
-    dashboard: "dashboardPage",
-    rfi: "rfiPage",
-    daily: "dailyPage",
-    submittals: "submittalsPage"
-  };
-
-  $(pageMap[pageName] || "dashboardPage").classList.add("active-page");
-
-  renderAll();
-}
-
-document.querySelectorAll(".nav-button").forEach((button) => {
-  button.addEventListener("click", () => {
-    showPage(button.dataset.page);
-  });
-});
-
-document.querySelectorAll("[data-close]").forEach((button) => {
-  button.addEventListener("click", () => {
-    closeModal(button.dataset.close);
-  });
-});
-
-document.querySelectorAll(".modal").forEach((modal) => {
-  modal.addEventListener("click", (event) => {
-    if (event.target === modal) {
-      closeModal(modal.id);
-    }
-  });
-});
-
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") {
-    document.querySelectorAll(".modal:not(.hidden)").forEach((modal) => {
-      closeModal(modal.id);
-    });
-  }
-});
-
-/* =========================================================
-   PROJECTS
-========================================================= */
-
-function initializeWorkspace() {
-  if (!state.projects.some((project) => project.id === activeProjectId)) {
-    activeProjectId = state.projects[0].id;
-  }
-
-  renderProjectSelector();
-  newDailyReport();
-  renderAll();
-}
-
-function renderProjectSelector() {
-  $("projectSelector").innerHTML = state.projects
-    .map(
-      (project) => `
-        <option value="${escapeHtml(project.id)}">
-          ${escapeHtml(project.name)}
-        </option>
-      `
-    )
-    .join("");
-
-  $("projectSelector").value = activeProjectId;
-}
-
-$("projectSelector").addEventListener("change", (event) => {
-  activeProjectId = event.target.value;
-  newDailyReport();
-  renderAll();
-});
-
-$("addProjectButton").addEventListener("click", () => {
-  $("projectForm").reset();
-  openModal("projectModal");
-  setTimeout(() => $("projectName").focus(), 50);
-});
-
-$("projectForm").addEventListener("submit", (event) => {
-  event.preventDefault();
-
-  const name = $("projectName").value.trim();
-
-  if (!name) {
-    showToast("Enter a project name.", true);
-    return;
-  }
-
-  const project = {
-    id: createId(),
-    name,
-    number: $("projectNumber").value.trim(),
-    client: $("projectClient").value.trim(),
-    createdAt: timestamp()
-  };
-
-  state.projects.push(project);
-  activeProjectId = project.id;
-
-  if (!saveState()) return;
-
-  renderProjectSelector();
-  newDailyReport();
-  renderAll();
-  closeModal("projectModal");
-
-  showToast("Project added.");
-});
-
-/* =========================================================
-   DASHBOARD
-========================================================= */
-
-function renderDashboard() {
-  const project = currentProject();
-  const rfis = projectRfis();
-  const reports = projectDailyReports();
-  const submittals = projectSubmittals();
-
-  const openRfis = rfis.filter(
-    (rfi) => !["closed", "void", "cancelled"].includes(
-      String(rfi.status).toLowerCase()
-    )
-  );
-
-  const respondedRfis = rfis.filter((rfi) =>
-    ["answered", "responded", "closed"].includes(
-      String(rfi.status).toLowerCase()
-    )
-  );
-
-  $("dashboardProjectName").textContent = project
-    ? `${project.name}${project.number ? ` · ${project.number}` : ""}`
-    : "";
-
-  $("totalRfis").textContent = rfis.length;
-  $("openRfis").textContent = openRfis.length;
-  $("respondedRfis").textContent = respondedRfis.length;
-  $("dailyReportCount").textContent = reports.length;
-  $("submittalCount").textContent = submittals.length;
-  $("navRfiCount").textContent = openRfis.length;
-
-  const recent = [...rfis]
-    .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
-    .slice(0, 8);
-
-  $("recentRfiBody").innerHTML = recent.length
-    ? recent
-        .map(
-          (rfi) => `
-            <tr>
-              <td><strong>${escapeHtml(rfi.number)}</strong></td>
-              <td>${escapeHtml(rfi.subject)}</td>
-              <td>${escapeHtml(rfi.discipline || "-")}</td>
-              <td>${statusPill(rfi.status)}</td>
-              <td>${escapeHtml(formatDate(rfi.dueDate))}</td>
-              <td>${escapeHtml(formatDateTime(rfi.updatedAt))}</td>
-            </tr>
-          `
-        )
-        .join("")
-    : emptyRow("No RFIs have been created for this project.", 6);
-}
-
-$("dashboardNewRfi").addEventListener("click", () => {
-  showPage("rfi");
-  openRfi();
-});
-
-/* =========================================================
-   RFI REGISTER
-========================================================= */
-
-function visibleComments(rfi) {
-  if (!session) return [];
-
-  return (rfi.comments || []).filter(
-    (comment) => comment.role === session.role
-  );
-}
-
-function renderRfis() {
-  const query = $("rfiSearch").value.trim().toLowerCase();
-  const statusFilter = $("rfiStatusFilter").value;
-
-  const records = projectRfis()
-    .filter((rfi) => {
-      const searchable = [
-        rfi.number,
-        rfi.subject,
-        rfi.raisedBy,
-        rfi.discipline,
-        rfi.contractor,
-        rfi.consultant,
-        rfi.responsible
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return !query || searchable.includes(query);
+  projects = (data || [])
+    .filter(function (membership) {
+      return Boolean(membership.projects);
     })
-    .filter((rfi) => !statusFilter || rfi.status === statusFilter)
-    .sort((a, b) =>
-      String(a.number).localeCompare(String(b.number), undefined, {
-        numeric: true
-      })
+    .map(function (membership) {
+      return {
+        ...membership.projects,
+        member_role: membership.role
+      };
+    });
+
+  if (currentProject) {
+    const updatedProject = projects.find(
+      function (project) {
+        return project.id === currentProject.id;
+      }
     );
 
-  $("rfiTableBody").innerHTML = records.length
-    ? records
-        .map(
-          (rfi) => `
-            <tr>
-              <td><strong>${escapeHtml(rfi.number)}</strong></td>
-              <td>${escapeHtml(rfi.subject)}</td>
-              <td>${escapeHtml(rfi.raisedBy || "-")}</td>
-              <td>${escapeHtml(rfi.discipline || "-")}</td>
-              <td>${escapeHtml(formatDate(rfi.submittedDate))}</td>
-              <td>${escapeHtml(formatDate(rfi.dueDate))}</td>
-              <td>${escapeHtml(formatDate(rfi.responseDate))}</td>
-              <td>${escapeHtml(formatDate(rfi.closingDate))}</td>
-              <td>${statusPill(rfi.status)}</td>
-              <td>${escapeHtml(rfi.priority || "Normal")}</td>
-              <td>${escapeHtml(rfi.responsible || "-")}</td>
-              <td>${escapeHtml(formatDateTime(rfi.updatedAt))}</td>
-              <td>
-                <div class="table-actions">
-                  <button
-                    type="button"
-                    data-rfi-edit="${escapeHtml(rfi.id)}"
-                  >
-                    Open
-                  </button>
-                </div>
-              </td>
-            </tr>
-          `
-        )
-        .join("")
-    : emptyRow("No matching RFIs were found.", 13);
+    currentProject = updatedProject || null;
+  }
 
-  document.querySelectorAll("[data-rfi-edit]").forEach((button) => {
-    button.addEventListener("click", () => {
-      openRfi(button.dataset.rfiEdit);
+  if (
+    !currentProject &&
+    projects.length > 0
+  ) {
+    currentProject = projects[0];
+  }
+
+  currentRole =
+    currentProject
+      ? currentProject.member_role || "viewer"
+      : "viewer";
+
+  select("#userRole").textContent =
+    currentRole;
+
+  syncProjectControls();
+}
+
+function syncProjectControls() {
+  const projectSelect =
+    select("#projectSelect");
+
+  if (!projects.length) {
+    projectSelect.innerHTML = `
+      <option value="">
+        No projects available
+      </option>
+    `;
+
+    select("#projectBtn").textContent =
+      "No project selected";
+
+    select("#oneDriveBtn").href =
+      config.DEFAULT_ONEDRIVE_FOLDER;
+
+    return;
+  }
+
+  projectSelect.innerHTML = projects
+    .map(function (project) {
+      const selected =
+        currentProject &&
+        currentProject.id === project.id
+          ? "selected"
+          : "";
+
+      return `
+        <option
+          value="${escapeHtml(project.id)}"
+          ${selected}
+        >
+          ${escapeHtml(project.name)}
+        </option>
+      `;
+    })
+    .join("");
+
+  select("#projectBtn").textContent =
+    currentProject
+      ? currentProject.name
+      : "Select project";
+
+  select("#oneDriveBtn").href =
+    currentProject &&
+    currentProject.onedrive_url
+      ? currentProject.onedrive_url
+      : config.DEFAULT_ONEDRIVE_FOLDER;
+}
+
+function renderNavigation() {
+  const navigation = select("#nav");
+
+  navigation.innerHTML = navigationPages
+    .map(function (page) {
+      const activeClass =
+        page === activePage
+          ? "active"
+          : "";
+
+      return `
+        <button
+          type="button"
+          class="nav-button ${activeClass}"
+          data-page="${escapeHtml(page)}"
+        >
+          ${escapeHtml(page)}
+        </button>
+      `;
+    })
+    .join("");
+
+  navigation
+    .querySelectorAll("[data-page]")
+    .forEach(function (button) {
+      button.addEventListener(
+        "click",
+        async function () {
+          activePage =
+            button.dataset.page;
+
+          renderNavigation();
+
+          await renderPage();
+
+          document.body.classList.remove("menu");
+        }
+      );
     });
-  });
 }
 
-$("rfiSearch").addEventListener("input", renderRfis);
-$("rfiStatusFilter").addEventListener("change", renderRfis);
-$("newRfiButton").addEventListener("click", () => openRfi());
+async function renderPage() {
+  if (!currentProject) {
+    renderEmptyProjectsPage();
+    return;
+  }
 
-function resetRfiForm() {
-  $("rfiForm").reset();
-  $("rfiId").value = "";
-  $("rfiStatus").value = "Draft";
-  $("rfiPriority").value = "Normal";
-  $("rfiDiscipline").value = "Civil";
-  $("rfiSubmittedDate").value = localDate();
-  $("rfiModalTitle").textContent = "Create RFI";
-  $("deleteRfiButton").classList.add("hidden");
+  if (activePage === "Dashboard") {
+    await renderDashboard();
+    return;
+  }
 
-  pendingComments = [];
-  selectedAttachmentNames = [];
+  if (activePage === "Team") {
+    await renderTeamPage();
+    return;
+  }
 
-  $("attachmentList").textContent = "No attachments selected.";
-  $("rfiIssuedResponse").readOnly = true;
-  $("newRfiComment").value = "";
-
-  configureRfiRoleControls();
-  renderCommentList();
+  await renderRecordsPage();
 }
 
-function configureRfiRoleControls() {
-  const consultant = session?.role === "Consultant";
+function renderEmptyProjectsPage() {
+  select("#content").innerHTML =
+    pageHeader(
+      "Projects",
+      "Create your first construction project.",
+      `
+        <button
+          type="button"
+          class="primary"
+          id="createFirstProject"
+        >
+          + Create project
+        </button>
+      `
+    ) +
+    `
+      <div class="card empty">
+        <h2>No projects yet</h2>
 
-  $("commentPrivacyMessage").textContent = session
-    ? `Visible only to ${session.role} users`
+        <p>
+          Create a project to begin managing
+          contract administration records.
+        </p>
+      </div>
+    `;
+
+  select("#createFirstProject").addEventListener(
+    "click",
+    openProjectForm
+  );
+}
+
+async function getProjectRecords() {
+  if (!currentProject) {
+    return [];
+  }
+
+  const {
+    data,
+    error
+  } = await database
+    .from("records")
+    .select("*")
+    .eq("project_id", currentProject.id)
+    .order("created_at", {
+      ascending: false
+    });
+
+  if (error) {
+    console.error(error);
+    showToast(error.message);
+    return [];
+  }
+
+  return data || [];
+}
+
+async function renderDashboard() {
+  const records = await getProjectRecords();
+
+  const approvedChanges = records
+    .filter(function (record) {
+      return (
+        record.type === "Change Orders" &&
+        record.status === "Approved"
+      );
+    })
+    .reduce(function (total, record) {
+      return total + Number(record.amount || 0);
+    }, 0);
+
+  const pendingChanges = records
+    .filter(function (record) {
+      return (
+        record.type === "Change Orders" &&
+        [
+          "Pending",
+          "Under review"
+        ].includes(record.status)
+      );
+    })
+    .reduce(function (total, record) {
+      return total + Number(record.amount || 0);
+    }, 0);
+
+  const certifiedAmount = records
+    .filter(function (record) {
+      return (
+        record.type === "Payment Applications" &&
+        [
+          "Approved",
+          "Paid"
+        ].includes(record.status)
+      );
+    })
+    .reduce(function (total, record) {
+      return total + Number(record.amount || 0);
+    }, 0);
+
+  const paidAmount = records
+    .filter(function (record) {
+      return (
+        record.type === "Payment Applications" &&
+        record.status === "Paid"
+      );
+    })
+    .reduce(function (total, record) {
+      return total + Number(record.amount || 0);
+    }, 0);
+
+  const openRfis = records.filter(
+    function (record) {
+      return (
+        record.type === "RFIs" &&
+        ![
+          "Answered",
+          "Resolved",
+          "Closed"
+        ].includes(record.status)
+      );
+    }
+  ).length;
+
+  const originalValue =
+    Number(currentProject.contract_value) || 0;
+
+  const revisedValue =
+    originalValue + approvedChanges;
+
+  const upcomingDeadlines = records
+    .filter(function (record) {
+      return Boolean(record.due_date);
+    })
+    .sort(function (first, second) {
+      return first.due_date.localeCompare(
+        second.due_date
+      );
+    })
+    .slice(0, 6);
+
+  select("#content").innerHTML =
+    pageHeader(
+      "Contract Dashboard",
+      [
+        currentProject.name,
+        currentProject.contract_number
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      `
+        ${
+          hasPermission("create")
+            ? `
+                <button
+                  type="button"
+                  class="primary"
+                  id="dashboardNewChange"
+                >
+                  + New change
+                </button>
+              `
+            : ""
+        }
+      `
+    ) +
+    `
+      <div class="metrics">
+        ${metric(
+          "Original contract",
+          formatMoney(originalValue),
+          "Base contract value"
+        )}
+
+        ${metric(
+          "Revised contract",
+          formatMoney(revisedValue),
+          "Approved changes included"
+        )}
+
+        ${metric(
+          "Certified to date",
+          formatMoney(certifiedAmount),
+          "Approved and paid applications"
+        )}
+
+        ${metric(
+          "Paid to date",
+          formatMoney(paidAmount),
+          "Payment applications paid"
+        )}
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h3>Project information</h3>
+
+          <p>
+            <strong>Project:</strong>
+            ${escapeHtml(currentProject.name)}
+          </p>
+
+          <p>
+            <strong>Contract number:</strong>
+            ${escapeHtml(
+              currentProject.contract_number || "—"
+            )}
+          </p>
+
+          <p>
+            <strong>Location:</strong>
+            ${escapeHtml(
+              currentProject.location || "—"
+            )}
+          </p>
+
+          <p>
+            <strong>Start date:</strong>
+            ${escapeHtml(
+              formatDate(currentProject.start_date)
+            )}
+          </p>
+
+          <p>
+            <strong>Completion date:</strong>
+            ${escapeHtml(
+              formatDate(
+                currentProject.completion_date
+              )
+            )}
+          </p>
+
+          <p>
+            <strong>Your role:</strong>
+            ${escapeHtml(currentRole)}
+          </p>
+
+          <p>
+            <strong>Pending changes:</strong>
+            ${escapeHtml(
+              formatMoney(pendingChanges)
+            )}
+          </p>
+
+          <p>
+            <strong>Open RFIs:</strong>
+            ${escapeHtml(openRfis)}
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>Upcoming deadlines</h3>
+
+          ${
+            upcomingDeadlines.length
+              ? upcomingDeadlines
+                  .map(function (record) {
+                    return `
+                      <div class="deadline-item">
+                        <div>
+                          <strong>
+                            ${escapeHtml(record.reference)}
+                          </strong>
+
+                          <span>
+                            ${escapeHtml(record.title)}
+                          </span>
+                        </div>
+
+                        <time>
+                          ${escapeHtml(
+                            formatDate(record.due_date)
+                          )}
+                        </time>
+                      </div>
+                    `;
+                  })
+                  .join("")
+              : `
+                  <p class="empty">
+                    No deadlines have been added.
+                  </p>
+                `
+          }
+        </div>
+      </div>
+    `;
+
+  const newChangeButton =
+    select("#dashboardNewChange");
+
+  if (newChangeButton) {
+    newChangeButton.addEventListener(
+      "click",
+      function () {
+        activePage = "Change Orders";
+
+        renderNavigation();
+
+        openRecordForm();
+      }
+    );
+  }
+}
+
+async function renderRecordsPage() {
+  const {
+    data,
+    error
+  } = await database
+    .from("records")
+    .select("*")
+    .eq("project_id", currentProject.id)
+    .eq("type", activePage)
+    .order("created_at", {
+      ascending: false
+    });
+
+  if (error) {
+    console.error(error);
+    showToast(error.message);
+    return;
+  }
+
+  const records = data || [];
+
+  const addButton = hasPermission("create")
+    ? `
+        <button
+          type="button"
+          class="primary"
+          id="addRecord"
+        >
+          + New record
+        </button>
+      `
     : "";
 
-  $("rfiDraftResponse").readOnly = !consultant;
-  $("rfiIssuedResponse").readOnly = true;
-  $("issueResponseButton").classList.toggle("hidden", !consultant);
+  const exportButton = hasPermission("export")
+    ? `
+        <button
+          type="button"
+          class="secondary"
+          id="exportCsv"
+        >
+          Export CSV
+        </button>
+      `
+    : "";
+
+  const rows = records
+    .map(function (record) {
+      const editButton =
+        hasPermission("update")
+          ? `
+              <button
+                type="button"
+                class="secondary edit-record"
+                data-id="${escapeHtml(record.id)}"
+              >
+                Edit
+              </button>
+            `
+          : "";
+
+      const deleteButton =
+        hasPermission("delete")
+          ? `
+              <button
+                type="button"
+                class="danger delete-record"
+                data-id="${escapeHtml(record.id)}"
+              >
+                Delete
+              </button>
+            `
+          : "";
+
+      return `
+        <tr>
+          <td class="record-reference">
+            ${escapeHtml(record.reference)}
+          </td>
+
+          <td>
+            ${escapeHtml(record.title)}
+          </td>
+
+          <td>
+            ${
+              Number(record.amount)
+                ? escapeHtml(
+                    formatMoney(record.amount)
+                  )
+                : "—"
+            }
+          </td>
+
+          <td>
+            ${escapeHtml(
+              record.responsible_party || "—"
+            )}
+          </td>
+
+          <td>
+            ${statusBadge(record.status)}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              formatDate(record.due_date)
+            )}
+          </td>
+
+          <td class="row-actions">
+            ${editButton}
+            ${deleteButton}
+
+            ${
+              !editButton && !deleteButton
+                ? "View only"
+                : ""
+            }
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  select("#content").innerHTML =
+    pageHeader(
+      activePage,
+      `Records for ${currentProject.name}`,
+      addButton
+    ) +
+    `
+      <div class="toolbar">
+        <input
+          id="search"
+          type="search"
+          placeholder="Search register"
+        >
+
+        ${exportButton}
+      </div>
+
+      <div class="card table-card">
+        <table id="recordsTable">
+          <thead>
+            <tr>
+              <th>Reference</th>
+              <th>Title</th>
+              <th>Amount</th>
+              <th>Party</th>
+              <th>Status</th>
+              <th>Due</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${
+              rows ||
+              `
+                <tr>
+                  <td
+                    colspan="7"
+                    class="empty"
+                  >
+                    No records found.
+                  </td>
+                </tr>
+              `
+            }
+          </tbody>
+        </table>
+      </div>
+    `;
+
+  const addRecordButton =
+    select("#addRecord");
+
+  if (addRecordButton) {
+    addRecordButton.addEventListener(
+      "click",
+      function () {
+        openRecordForm();
+      }
+    );
+  }
+
+  const searchInput =
+    select("#search");
+
+  if (searchInput) {
+    searchInput.addEventListener(
+      "input",
+      function (event) {
+        filterRecords(event.target.value);
+      }
+    );
+  }
+
+  document
+    .querySelectorAll(".edit-record")
+    .forEach(function (button) {
+      button.addEventListener(
+        "click",
+        function () {
+          const record = records.find(
+            function (item) {
+              return item.id === button.dataset.id;
+            }
+          );
+
+          if (record) {
+            openRecordForm(record);
+          }
+        }
+      );
+    });
+
+  document
+    .querySelectorAll(".delete-record")
+    .forEach(function (button) {
+      button.addEventListener(
+        "click",
+        function () {
+          deleteRecord(button.dataset.id);
+        }
+      );
+    });
+
+  const exportCsvButton =
+    select("#exportCsv");
+
+  if (exportCsvButton) {
+    exportCsvButton.addEventListener(
+      "click",
+      function () {
+        exportCsv(records);
+      }
+    );
+  }
 }
 
-function openRfi(id = null) {
-  resetRfiForm();
+function filterRecords(query) {
+  document
+    .querySelectorAll(
+      "#recordsTable tbody tr"
+    )
+    .forEach(function (row) {
+      const matches = row.innerText
+        .toLowerCase()
+        .includes(query.toLowerCase());
 
-  if (id) {
-    const rfi = state.rfis.find((item) => item.id === id);
+      row.style.display =
+        matches
+          ? ""
+          : "none";
+    });
+}
 
-    if (!rfi) {
-      showToast("RFI could not be found.", true);
+function openRecordForm(record = null) {
+  const requiredPermission =
+    record
+      ? "update"
+      : "create";
+
+  if (!hasPermission(requiredPermission)) {
+    showToast(
+      "Your project role does not allow this action."
+    );
+
+    return;
+  }
+
+  editingRecord = record;
+  modalMode = "record";
+
+  select("#modalTitle").textContent =
+    record
+      ? `Edit ${activePage} record`
+      : `New ${activePage} record`;
+
+  select("#modalFields").innerHTML = `
+    <label class="field">
+      Title
+
+      <input
+        name="title"
+        required
+        maxlength="250"
+        value="${escapeHtml(
+          record ? record.title : ""
+        )}"
+      >
+    </label>
+
+    <label class="field">
+      Amount in CAD
+
+      <input
+        name="amount"
+        type="number"
+        step="0.01"
+        value="${
+          record
+            ? Number(record.amount || 0)
+            : 0
+        }"
+      >
+    </label>
+
+    <label class="field">
+      Responsible party
+
+      <input
+        name="responsible_party"
+        maxlength="150"
+        value="${escapeHtml(
+          record
+            ? record.responsible_party || ""
+            : ""
+        )}"
+      >
+    </label>
+
+    <label class="field">
+      Status
+
+      <select name="status">
+        ${recordStatuses
+          .map(function (status) {
+            const selected =
+              record &&
+              record.status === status
+                ? "selected"
+                : "";
+
+            return `
+              <option
+                value="${escapeHtml(status)}"
+                ${selected}
+              >
+                ${escapeHtml(status)}
+              </option>
+            `;
+          })
+          .join("")}
+      </select>
+    </label>
+
+    <label class="field">
+      Due date
+
+      <input
+        name="due_date"
+        type="date"
+        value="${escapeHtml(
+          record
+            ? record.due_date || ""
+            : ""
+        )}"
+      >
+    </label>
+
+    <label class="field">
+      Notes
+
+      <textarea
+        name="notes"
+        rows="5"
+        maxlength="5000"
+      >${escapeHtml(
+        record
+          ? record.notes || ""
+          : ""
+      )}</textarea>
+    </label>
+  `;
+
+  openModal();
+
+  const titleInput =
+    select('#modalForm [name="title"]');
+
+  if (titleInput) {
+    titleInput.focus();
+  }
+}
+
+async function saveRecord(event) {
+  event.preventDefault();
+
+  const requiredPermission =
+    editingRecord
+      ? "update"
+      : "create";
+
+  if (!hasPermission(requiredPermission)) {
+    showToast(
+      "Your project role does not allow this action."
+    );
+
+    return;
+  }
+
+  if (!currentProject) {
+    showToast("Select a project first.");
+    return;
+  }
+
+  const formData =
+    new FormData(event.currentTarget);
+
+  const recordData =
+    Object.fromEntries(formData.entries());
+
+  recordData.title =
+    recordData.title.trim();
+
+  recordData.amount =
+    Number(recordData.amount) || 0;
+
+  recordData.responsible_party =
+    recordData.responsible_party.trim();
+
+  recordData.notes =
+    recordData.notes.trim();
+
+  if (!recordData.title) {
+    showToast("A record title is required.");
+    return;
+  }
+
+  if (editingRecord) {
+    const {
+      error
+    } = await database
+      .from("records")
+      .update({
+        title: recordData.title,
+        amount: recordData.amount,
+        responsible_party:
+          recordData.responsible_party,
+        status: recordData.status,
+        due_date:
+          recordData.due_date || null,
+        notes: recordData.notes,
+        updated_at:
+          new Date().toISOString()
+      })
+      .eq("id", editingRecord.id)
+      .eq("project_id", currentProject.id);
+
+    if (error) {
+      console.error(error);
+      showToast(error.message);
+      return;
+    }
+  } else {
+    const prefix =
+      recordPrefixes[activePage] || "REC";
+
+    const {
+      data: reference,
+      error: referenceError
+    } = await database.rpc(
+      "next_project_reference",
+      {
+        p_project_id:
+          currentProject.id,
+        p_record_type:
+          activePage,
+        p_prefix:
+          prefix
+      }
+    );
+
+    if (referenceError) {
+      console.error(referenceError);
+      showToast(referenceError.message);
       return;
     }
 
-    $("rfiId").value = rfi.id;
-    $("rfiNumber").value = rfi.number || "";
-    $("rfiStatus").value = STATUSES.includes(rfi.status)
-      ? rfi.status
-      : "Open";
-    $("rfiPriority").value = rfi.priority || "Normal";
-    $("rfiSubject").value = rfi.subject || "";
-    $("rfiRaisedBy").value = rfi.raisedBy || "";
-    $("rfiDiscipline").value = rfi.discipline || "Civil";
-    $("rfiResponsible").value = rfi.responsible || "";
-    $("rfiContractor").value = rfi.contractor || "";
-    $("rfiConsultant").value = rfi.consultant || "";
-    $("rfiLocation").value = rfi.location || "";
-    $("rfiReference").value = rfi.reference || "";
-    $("rfiSubmittedDate").value = rfi.submittedDate || "";
-    $("rfiDueDate").value = rfi.dueDate || "";
-    $("rfiResponseDate").value = rfi.responseDate || "";
-    $("rfiClosingDate").value = rfi.closingDate || "";
-    $("rfiQuestion").value = rfi.question || "";
-    $("rfiDraftResponse").value = rfi.draftResponse || "";
-    $("rfiIssuedResponse").value = rfi.issuedResponse || "";
+    const {
+      error
+    } = await database
+      .from("records")
+      .insert({
+        project_id:
+          currentProject.id,
+        type:
+          activePage,
+        reference:
+          reference,
+        title:
+          recordData.title,
+        amount:
+          recordData.amount,
+        responsible_party:
+          recordData.responsible_party,
+        status:
+          recordData.status,
+        due_date:
+          recordData.due_date || null,
+        notes:
+          recordData.notes,
+        created_by:
+          currentUser.id
+      });
 
-    selectedAttachmentNames = [...(rfi.attachments || [])];
-    pendingComments = [...(rfi.comments || [])];
-
-    $("attachmentList").textContent = selectedAttachmentNames.length
-      ? selectedAttachmentNames.join(", ")
-      : "No attachments selected.";
-
-    $("rfiModalTitle").textContent = `${rfi.number} · ${rfi.subject}`;
-    $("deleteRfiButton").classList.remove("hidden");
-
-    renderCommentList();
+    if (error) {
+      console.error(error);
+      showToast(error.message);
+      return;
+    }
   }
 
-  openModal("rfiModal");
-  setTimeout(() => $("rfiNumber").focus(), 50);
+  const wasEditing =
+    Boolean(editingRecord);
+
+  closeModal();
+
+  await renderPage();
+
+  showToast(
+    wasEditing
+      ? "Record updated"
+      : "Record created"
+  );
 }
 
-$("rfiAttachments").addEventListener("change", (event) => {
-  const newNames = Array.from(event.target.files).map((file) => file.name);
+async function deleteRecord(recordId) {
+  if (!hasPermission("delete")) {
+    showToast(
+      "Your project role cannot delete records."
+    );
 
-  selectedAttachmentNames = [
-    ...new Set([...selectedAttachmentNames, ...newNames])
-  ];
+    return;
+  }
 
-  $("attachmentList").textContent = selectedAttachmentNames.length
-    ? selectedAttachmentNames.join(", ")
-    : "No attachments selected.";
-});
-
-function renderCommentList() {
-  const availableComments = pendingComments.filter(
-    (comment) => comment.role === session?.role
+  const confirmed = window.confirm(
+    "Delete this record permanently?"
   );
 
-  $("rfiCommentList").innerHTML = availableComments.length
-    ? availableComments
-        .map(
-          (comment) => `
-            <article class="comment">
-              <div class="comment-meta">
-                <strong>${escapeHtml(comment.author)}</strong>
-                <span>${escapeHtml(formatDateTime(comment.createdAt))}</span>
-              </div>
+  if (!confirmed) {
+    return;
+  }
 
-              <p>${escapeHtml(comment.text)}</p>
-            </article>
-          `
-        )
-        .join("")
-    : `
-      <p class="muted">
-        No ${escapeHtml(session?.role || "")} internal comments.
-      </p>
+  const {
+    error
+  } = await database
+    .from("records")
+    .delete()
+    .eq("id", recordId)
+    .eq("project_id", currentProject.id);
+
+  if (error) {
+    console.error(error);
+    showToast(error.message);
+    return;
+  }
+
+  await renderPage();
+
+  showToast("Record deleted");
+}
+
+function openProjectForm() {
+  if (!currentUser) {
+    showToast("Sign in before creating a project.");
+    return;
+  }
+
+  modalMode = "project";
+  editingRecord = null;
+
+  select("#modalTitle").textContent =
+    "Create project";
+
+  select("#modalFields").innerHTML = `
+    <label class="field">
+      Project name
+
+      <input
+        name="name"
+        required
+        maxlength="200"
+      >
+    </label>
+
+    <label class="field">
+      Contract number
+
+      <input
+        name="contract_number"
+        maxlength="100"
+      >
+    </label>
+
+    <label class="field">
+      Location
+
+      <input
+        name="location"
+        maxlength="250"
+      >
+    </label>
+
+    <label class="field">
+      Original contract value in CAD
+
+      <input
+        name="contract_value"
+        type="number"
+        step="0.01"
+        value="0"
+      >
+    </label>
+
+    <label class="field">
+      Start date
+
+      <input
+        name="start_date"
+        type="date"
+      >
+    </label>
+
+    <label class="field">
+      Completion date
+
+      <input
+        name="completion_date"
+        type="date"
+      >
+    </label>
+
+    <label class="field">
+      OneDrive project folder
+
+      <input
+        name="onedrive_url"
+        type="url"
+        value="${escapeHtml(
+          config.DEFAULT_ONEDRIVE_FOLDER
+        )}"
+      >
+    </label>
+  `;
+
+  openModal();
+
+  const nameInput =
+    select('#modalForm [name="name"]');
+
+  if (nameInput) {
+    nameInput.focus();
+  }
+}
+
+async function saveProject(event) {
+  event.preventDefault();
+
+  if (!currentUser) {
+    showToast("Sign in before creating a project.");
+    return;
+  }
+
+  const formData =
+    new FormData(event.currentTarget);
+
+  const projectData =
+    Object.fromEntries(formData.entries());
+
+  projectData.name =
+    projectData.name.trim();
+
+  projectData.contract_number =
+    projectData.contract_number.trim();
+
+  projectData.location =
+    projectData.location.trim();
+
+  projectData.contract_value =
+    Number(projectData.contract_value) || 0;
+
+  projectData.onedrive_url =
+    projectData.onedrive_url.trim() ||
+    config.DEFAULT_ONEDRIVE_FOLDER;
+
+  if (!projectData.name) {
+    showToast("Project name is required.");
+    return;
+  }
+
+  if (
+    projectData.start_date &&
+    projectData.completion_date &&
+    projectData.completion_date <
+      projectData.start_date
+  ) {
+    showToast(
+      "Completion date cannot be earlier than the start date."
+    );
+
+    return;
+  }
+
+  const projectId = generateUuid();
+
+  const {
+    error: projectError
+  } = await database
+    .from("projects")
+    .insert({
+      id:
+        projectId,
+      name:
+        projectData.name,
+      contract_number:
+        projectData.contract_number,
+      location:
+        projectData.location,
+      contract_value:
+        projectData.contract_value,
+      start_date:
+        projectData.start_date || null,
+      completion_date:
+        projectData.completion_date || null,
+      onedrive_url:
+        projectData.onedrive_url,
+      created_by:
+        currentUser.id
+    });
+
+  if (projectError) {
+    console.error(projectError);
+    showToast(projectError.message);
+    return;
+  }
+
+  const {
+    error: membershipError
+  } = await database
+    .from("project_members")
+    .insert({
+      project_id:
+        projectId,
+      user_id:
+        currentUser.id,
+      role:
+        "owner"
+    });
+
+  if (membershipError) {
+    console.error(membershipError);
+    showToast(membershipError.message);
+    return;
+  }
+
+  closeModal();
+
+  currentProject = null;
+
+  await loadProjects();
+
+  activePage = "Dashboard";
+
+  renderNavigation();
+
+  await renderPage();
+
+  showToast("Project created");
+}
+
+async function renderTeamPage() {
+  const {
+    data: memberships,
+    error: membershipError
+  } = await database
+    .from("project_members")
+    .select("user_id,role")
+    .eq("project_id", currentProject.id);
+
+  if (membershipError) {
+    console.error(membershipError);
+    showToast(membershipError.message);
+    return;
+  }
+
+  const userIds = (memberships || [])
+    .map(function (membership) {
+      return membership.user_id;
+    });
+
+  let profiles = [];
+
+  if (userIds.length > 0) {
+    const {
+      data: profileData,
+      error: profileError
+    } = await database
+      .from("profiles")
+      .select("id,email,full_name")
+      .in("id", userIds);
+
+    if (profileError) {
+      console.error(profileError);
+    } else {
+      profiles = profileData || [];
+    }
+  }
+
+  const rows = (memberships || [])
+    .map(function (membership) {
+      const profile = profiles.find(
+        function (item) {
+          return item.id === membership.user_id;
+        }
+      );
+
+      return `
+        <tr>
+          <td>
+            ${escapeHtml(
+              profile
+                ? profile.full_name || "—"
+                : "—"
+            )}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              profile
+                ? profile.email || "—"
+                : membership.user_id
+            )}
+          </td>
+
+          <td>
+            ${escapeHtml(membership.role)}
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  select("#content").innerHTML =
+    pageHeader(
+      "Team",
+      `Members of ${currentProject.name}`
+    ) +
+    `
+      <div class="card table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email or User ID</th>
+              <th>Project role</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${
+              rows ||
+              `
+                <tr>
+                  <td
+                    colspan="3"
+                    class="empty"
+                  >
+                    No project members found.
+                  </td>
+                </tr>
+              `
+            }
+          </tbody>
+        </table>
+      </div>
     `;
 }
 
-$("addRfiComment").addEventListener("click", () => {
-  const text = $("newRfiComment").value.trim();
-
-  if (!text) {
-    showToast("Enter a comment first.", true);
-    return;
-  }
-
-  pendingComments.push({
-    id: createId(),
-    role: session.role,
-    author: session.email,
-    text,
-    createdAt: timestamp()
-  });
-
-  $("newRfiComment").value = "";
-  renderCommentList();
-
-  showToast(`${session.role} private comment added.`);
-});
-
-function buildRfiFromForm(existing = {}) {
-  return {
-    ...existing,
-    id: existing.id || createId(),
-    projectId: activeProjectId,
-
-    number: $("rfiNumber").value.trim(),
-    subject: $("rfiSubject").value.trim(),
-    status: $("rfiStatus").value,
-    priority: $("rfiPriority").value,
-    raisedBy: $("rfiRaisedBy").value.trim(),
-    discipline: $("rfiDiscipline").value,
-    responsible: $("rfiResponsible").value.trim(),
-    contractor: $("rfiContractor").value.trim(),
-    consultant: $("rfiConsultant").value.trim(),
-    location: $("rfiLocation").value.trim(),
-    reference: $("rfiReference").value.trim(),
-    submittedDate: $("rfiSubmittedDate").value,
-    dueDate: $("rfiDueDate").value,
-    responseDate: $("rfiResponseDate").value,
-    closingDate: $("rfiClosingDate").value,
-    question: $("rfiQuestion").value.trim(),
-    attachments: [...selectedAttachmentNames],
-    comments: [...pendingComments],
-    draftResponse: $("rfiDraftResponse").value.trim(),
-    issuedResponse: $("rfiIssuedResponse").value.trim(),
-
-    createdAt: existing.createdAt || timestamp(),
-    updatedAt: timestamp()
-  };
-}
-
-function findDuplicateRfi(number, excludeId = "") {
-  const normalized = normalizeRfiNumber(number);
-
-  return state.rfis.find(
-    (rfi) =>
-      rfi.projectId === activeProjectId &&
-      rfi.id !== excludeId &&
-      normalizeRfiNumber(rfi.number) === normalized
-  );
-}
-
-$("rfiForm").addEventListener("submit", (event) => {
-  event.preventDefault();
-
-  const id = $("rfiId").value;
-  const number = $("rfiNumber").value.trim();
-  const subject = $("rfiSubject").value.trim();
-
-  if (!number || !subject) {
-    showToast("RFI number and subject are required.", true);
-    return;
-  }
-
-  if (findDuplicateRfi(number, id)) {
+function exportCsv(records) {
+  if (!hasPermission("export")) {
     showToast(
-      `RFI ${number} already exists in the selected project.`,
-      true
+      "Your project role cannot export records."
     );
+
     return;
   }
 
-  const existing = state.rfis.find((rfi) => rfi.id === id);
-  const record = buildRfiFromForm(existing || {});
-
-  if (existing) {
-    const index = state.rfis.findIndex((rfi) => rfi.id === id);
-    state.rfis[index] = record;
-  } else {
-    state.rfis.push(record);
-  }
-
-  if (!saveState()) return;
-
-  renderAll();
-  closeModal("rfiModal");
-
-  showToast(existing ? "RFI updated." : "RFI created.");
-});
-
-$("deleteRfiButton").addEventListener("click", () => {
-  const id = $("rfiId").value;
-
-  if (!id) return;
-
-  const rfi = state.rfis.find((item) => item.id === id);
-
-  if (!rfi) return;
-
-  const confirmed = window.confirm(
-    `Delete ${rfi.number}? This cannot be undone.`
-  );
-
-  if (!confirmed) return;
-
-  state.rfis = state.rfis.filter((item) => item.id !== id);
-
-  if (!saveState()) return;
-
-  renderAll();
-  closeModal("rfiModal");
-  showToast("RFI deleted.");
-});
-
-$("issueResponseButton").addEventListener("click", () => {
-  if (session?.role !== "Consultant") {
-    showToast("Only the Consultant role can issue a response.", true);
-    return;
-  }
-
-  const draft = $("rfiDraftResponse").value.trim();
-
-  if (!draft) {
-    showToast("Enter a draft response before issuing.", true);
-    return;
-  }
-
-  const confirmed = window.confirm(
-    "Issue this response officially? The status will change to Responded."
-  );
-
-  if (!confirmed) return;
-
-  $("rfiIssuedResponse").value = draft;
-  $("rfiResponseDate").value = localDate();
-  $("rfiStatus").value = "Responded";
-
-  $("rfiForm").requestSubmit();
-});
-
-/* =========================================================
-   CSV IMPORT AND EXPORT
-========================================================= */
-
-function parseCsv(text) {
-  const rows = [];
-  let row = [];
-  let value = "";
-  let quoted = false;
-
-  const source = String(text).replace(/^\uFEFF/, "");
-
-  for (let index = 0; index < source.length; index += 1) {
-    const character = source[index];
-
-    if (character === '"') {
-      if (quoted && source[index + 1] === '"') {
-        value += '"';
-        index += 1;
-      } else {
-        quoted = !quoted;
-      }
-
-      continue;
-    }
-
-    if (character === "," && !quoted) {
-      row.push(value);
-      value = "";
-      continue;
-    }
-
-    if ((character === "\n" || character === "\r") && !quoted) {
-      if (character === "\r" && source[index + 1] === "\n") {
-        index += 1;
-      }
-
-      row.push(value);
-
-      if (row.some((cell) => String(cell).trim() !== "")) {
-        rows.push(row);
-      }
-
-      row = [];
-      value = "";
-      continue;
-    }
-
-    value += character;
-  }
-
-  row.push(value);
-
-  if (row.some((cell) => String(cell).trim() !== "")) {
-    rows.push(row);
-  }
-
-  return rows;
-}
-
-function findColumn(headers, aliases) {
-  const normalizedHeaders = headers.map(normalizeHeading);
-  const normalizedAliases = aliases.map(normalizeHeading);
-
-  return normalizedHeaders.findIndex((header) =>
-    normalizedAliases.includes(header)
-  );
-}
-
-function getCell(row, columnIndex) {
-  return columnIndex >= 0 ? String(row[columnIndex] ?? "").trim() : "";
-}
-
-function mappedStatus(value) {
-  const status = String(value ?? "").trim();
-
-  if (!status) return "Open";
-
-  const match = STATUSES.find(
-    (item) => item.toLowerCase() === status.toLowerCase()
-  );
-
-  return match || status;
-}
-
-$("rfiCsvInput").addEventListener("change", async (event) => {
-  const file = event.target.files[0];
-  event.target.value = "";
-
-  if (!file) return;
-
-  try {
-    const text = await file.text();
-    const rows = parseCsv(text);
-
-    if (rows.length < 2) {
-      throw new Error("The CSV does not contain sufficient rows.");
-    }
-
-    const headers = rows[0];
-
-    const columns = {
-      number: findColumn(headers, [
-        "RFI No",
-        "RFI Number",
-        "RFINumber",
-        "Number",
-        "RFI #"
-      ]),
-
-      subject: findColumn(headers, [
-        "Subject",
-        "Title",
-        "Description",
-        "RFI Subject"
-      ]),
-
-      raisedBy: findColumn(headers, [
-        "Raised By",
-        "Submitted By",
-        "Originator",
-        "From"
-      ]),
-
-      discipline: findColumn(headers, [
-        "Discipline",
-        "Category",
-        "Trade"
-      ]),
-
-      submittedDate: findColumn(headers, [
-        "Submitted Date",
-        "Date Submitted",
-        "Issued Date"
-      ]),
-
-      dueDate: findColumn(headers, [
-        "Due Date",
-        "Required Date",
-        "Response Due Date"
-      ]),
-
-      responseDate: findColumn(headers, [
-        "Response Date",
-        "Answered Date",
-        "Date Responded"
-      ]),
-
-      closingDate: findColumn(headers, [
-        "Closing Date",
-        "Closed Date",
-        "Date Closed"
-      ]),
-
-      status: findColumn(headers, [
-        "Status",
-        "RFI Status"
-      ]),
-
-      priority: findColumn(headers, [
-        "Priority"
-      ]),
-
-      responsible: findColumn(headers, [
-        "Responsible",
-        "Assigned To",
-        "Ball In Court"
-      ]),
-
-      contractor: findColumn(headers, [
-        "Contractor",
-        "Responsible Contractor"
-      ]),
-
-      consultant: findColumn(headers, [
-        "Consultant",
-        "Reviewer"
-      ]),
-
-      location: findColumn(headers, [
-        "Location"
-      ]),
-
-      reference: findColumn(headers, [
-        "Reference",
-        "Drawing Reference",
-        "Specification Reference",
-        "Spec Reference"
-      ]),
-
-      question: findColumn(headers, [
-        "Question",
-        "Description",
-        "Details",
-        "Request"
-      ]),
-
-      response: findColumn(headers, [
-        "Response",
-        "Answer",
-        "Official Response"
-      ])
-    };
-
-    if (columns.number < 0) {
-      throw new Error(
-        "RFI number column was not found. Use a header such as RFI No or RFI Number."
-      );
-    }
-
-    let created = 0;
-    let updated = 0;
-    let skipped = 0;
-
-    rows.slice(1).forEach((row) => {
-      const number = getCell(row, columns.number);
-
-      if (!number) {
-        skipped += 1;
-        return;
-      }
-
-      const existing = state.rfis.find(
-        (rfi) =>
-          rfi.projectId === activeProjectId &&
-          normalizeRfiNumber(rfi.number) === normalizeRfiNumber(number)
-      );
-
-      const imported = {
-        ...(existing || {}),
-        id: existing?.id || createId(),
-        projectId: activeProjectId,
-
-        number,
-        subject:
-          getCell(row, columns.subject) ||
-          existing?.subject ||
-          "Imported RFI",
-
-        raisedBy:
-          getCell(row, columns.raisedBy) ||
-          existing?.raisedBy ||
-          "",
-
-        discipline:
-          getCell(row, columns.discipline) ||
-          existing?.discipline ||
-          "General",
-
-        submittedDate:
-          getCell(row, columns.submittedDate) ||
-          existing?.submittedDate ||
-          "",
-
-        dueDate:
-          getCell(row, columns.dueDate) ||
-          existing?.dueDate ||
-          "",
-
-        responseDate:
-          getCell(row, columns.responseDate) ||
-          existing?.responseDate ||
-          "",
-
-        closingDate:
-          getCell(row, columns.closingDate) ||
-          existing?.closingDate ||
-          "",
-
-        status: mappedStatus(
-          getCell(row, columns.status) ||
-          existing?.status ||
-          "Open"
-        ),
-
-        priority:
-          getCell(row, columns.priority) ||
-          existing?.priority ||
-          "Normal",
-
-        responsible:
-          getCell(row, columns.responsible) ||
-          existing?.responsible ||
-          "",
-
-        contractor:
-          getCell(row, columns.contractor) ||
-          existing?.contractor ||
-          "",
-
-        consultant:
-          getCell(row, columns.consultant) ||
-          existing?.consultant ||
-          "",
-
-        location:
-          getCell(row, columns.location) ||
-          existing?.location ||
-          "",
-
-        reference:
-          getCell(row, columns.reference) ||
-          existing?.reference ||
-          "",
-
-        question:
-          getCell(row, columns.question) ||
-          existing?.question ||
-          "",
-
-        issuedResponse:
-          getCell(row, columns.response) ||
-          existing?.issuedResponse ||
-          "",
-
-        draftResponse: existing?.draftResponse || "",
-        attachments: existing?.attachments || [],
-        comments: existing?.comments || [],
-        createdAt: existing?.createdAt || timestamp(),
-        updatedAt: timestamp()
-      };
-
-      if (existing) {
-        const index = state.rfis.findIndex(
-          (rfi) => rfi.id === existing.id
-        );
-
-        state.rfis[index] = imported;
-        updated += 1;
-      } else {
-        state.rfis.push(imported);
-        created += 1;
-      }
-    });
-
-    if (!saveState()) return;
-
-    renderAll();
-
-    showToast(
-      `CSV complete: ${created} created, ${updated} updated, ${skipped} skipped.`
+  function quoteCsv(value) {
+    return (
+      '"' +
+      String(value ?? "")
+        .replaceAll('"', '""') +
+      '"'
     );
-  } catch (error) {
-    console.error(error);
-    showToast(`CSV import failed: ${error.message}`, true);
   }
-});
 
-function csvEscape(value) {
-  const text = String(value ?? "").replace(/\r?\n/g, "\n");
-  return `"${text.replace(/"/g, '""')}"`;
-}
-
-$("exportRfiCsv").addEventListener("click", () => {
-  const headers = [
-    "RFI No",
-    "Subject",
-    "Raised By",
-    "Discipline",
-    "Submitted Date",
-    "Due Date",
-    "Response Date",
-    "Closing Date",
-    "Status",
-    "Priority",
-    "Responsible",
-    "Contractor",
-    "Consultant",
-    "Location",
+  const headings = [
     "Reference",
-    "Question",
-    "Official Response",
-    "Attachments",
-    "Updated"
+    "Title",
+    "Amount",
+    "Responsible Party",
+    "Status",
+    "Due Date",
+    "Notes"
   ];
 
-  const rows = projectRfis().map((rfi) => [
-    rfi.number,
-    rfi.subject,
-    rfi.raisedBy,
-    rfi.discipline,
-    rfi.submittedDate,
-    rfi.dueDate,
-    rfi.responseDate,
-    rfi.closingDate,
-    rfi.status,
-    rfi.priority,
-    rfi.responsible,
-    rfi.contractor,
-    rfi.consultant,
-    rfi.location,
-    rfi.reference,
-    rfi.question,
-    rfi.issuedResponse,
-    (rfi.attachments || []).join("; "),
-    rfi.updatedAt
-  ]);
+  const rows = records.map(
+    function (record) {
+      return [
+        record.reference,
+        record.title,
+        record.amount,
+        record.responsible_party,
+        record.status,
+        record.due_date,
+        record.notes
+      ]
+        .map(quoteCsv)
+        .join(",");
+    }
+  );
 
   const csv = [
-    headers.map(csvEscape).join(","),
-    ...rows.map((row) => row.map(csvEscape).join(","))
-  ].join("\r\n");
+    headings.join(","),
+    ...rows
+  ].join("\n");
 
-  const blob = new Blob(["\uFEFF", csv], {
-    type: "text/csv;charset=utf-8"
-  });
+  const blob = new Blob(
+    [csv],
+    {
+      type:
+        "text/csv;charset=utf-8"
+    }
+  );
 
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
+  const url =
+    URL.createObjectURL(blob);
+
+  const link =
+    document.createElement("a");
 
   link.href = url;
-  link.download = `${currentProject().name.replace(/[^a-z0-9]+/gi, "-")}-RFI-Register.csv`;
+
+  link.download =
+    `${activePage
+      .toLowerCase()
+      .replaceAll(" ", "-")
+      .replaceAll("&", "and")}.csv`;
 
   document.body.appendChild(link);
+
   link.click();
   link.remove();
 
   URL.revokeObjectURL(url);
 
-  showToast("RFI register exported.");
-});
-
-/* =========================================================
-   DAILY REPORTS
-========================================================= */
-
-const dailyPreviewMap = {
-  dailyDate: "previewDate",
-  dailyInspector: "previewInspector",
-  dailyWeather: "previewWeather",
-  dailyTemperature: "previewTemperature",
-  dailyContractor: "previewContractor",
-  dailyWork: "previewWork",
-  dailyLabour: "previewLabour",
-  dailyEquipment: "previewEquipment",
-  dailyMaterials: "previewMaterials",
-  dailyIssues: "previewIssues",
-  dailySafety: "previewSafety",
-  dailyComments: "previewComments"
-};
-
-Object.entries(dailyPreviewMap).forEach(([inputId]) => {
-  $(inputId).addEventListener("input", updateDailyPreview);
-});
-
-function updateDailyPreview() {
-  $("previewProject").textContent = currentProject()?.name || "-";
-
-  Object.entries(dailyPreviewMap).forEach(([inputId, previewId]) => {
-    const value = $(inputId).value.trim();
-
-    $(previewId).textContent =
-      inputId === "dailyDate"
-        ? formatDate(value)
-        : value || "-";
-  });
+  showToast("CSV exported");
 }
 
-function newDailyReport() {
-  $("dailyForm").reset();
-  $("dailyId").value = "";
-  $("dailyDate").value = localDate();
-  $("dailyInspector").value = session?.email || "";
-  $("dailySaveStatus").textContent = "New report";
+const authForm = select("#authForm");
 
-  updateDailyPreview();
-}
+authForm.addEventListener(
+  "submit",
+  async function (event) {
+    event.preventDefault();
 
-$("newDailyButton").addEventListener("click", () => {
-  newDailyReport();
-  $("dailyDate").scrollIntoView({
-    behavior: "smooth",
-    block: "center"
-  });
-});
+    setAuthMessage("");
 
-$("clearDailyButton").addEventListener("click", () => {
-  newDailyReport();
-});
+    const email =
+      select("#email").value.trim();
 
-$("dailyForm").addEventListener("submit", (event) => {
-  event.preventDefault();
+    const password =
+      select("#password").value;
 
-  const id = $("dailyId").value;
-  const existing = state.dailyReports.find((report) => report.id === id);
+    if (!email || !password) {
+      setAuthMessage(
+        "Enter your email and password.",
+        true
+      );
 
-  const report = {
-    ...(existing || {}),
-    id: existing?.id || createId(),
-    projectId: activeProjectId,
-    date: $("dailyDate").value,
-    inspector: $("dailyInspector").value.trim(),
-    weather: $("dailyWeather").value.trim(),
-    temperature: $("dailyTemperature").value.trim(),
-    contractor: $("dailyContractor").value.trim(),
-    work: $("dailyWork").value.trim(),
-    labour: $("dailyLabour").value.trim(),
-    equipment: $("dailyEquipment").value.trim(),
-    materials: $("dailyMaterials").value.trim(),
-    issues: $("dailyIssues").value.trim(),
-    safety: $("dailySafety").value.trim(),
-    comments: $("dailyComments").value.trim(),
-    createdAt: existing?.createdAt || timestamp(),
-    updatedAt: timestamp()
-  };
+      return;
+    }
 
-  if (!report.date) {
-    showToast("Report date is required.", true);
-    return;
-  }
+    const {
+      error
+    } = await database.auth
+      .signInWithPassword({
+        email: email,
+        password: password
+      });
 
-  if (existing) {
-    const index = state.dailyReports.findIndex(
-      (item) => item.id === existing.id
+    if (error) {
+      setAuthMessage(error.message, true);
+      return;
+    }
+
+    setAuthMessage(
+      "Signed in successfully."
     );
-
-    state.dailyReports[index] = report;
-  } else {
-    state.dailyReports.push(report);
   }
+);
 
-  if (!saveState()) return;
+select("#signupBtn").addEventListener(
+  "click",
+  async function () {
+    setAuthMessage("");
 
-  $("dailyId").value = report.id;
-  $("dailySaveStatus").textContent =
-    `Saved ${formatDateTime(report.updatedAt)}`;
+    const email =
+      select("#email").value.trim();
 
-  renderAll();
-  showToast(existing ? "Daily report updated." : "Daily report saved.");
-});
+    const password =
+      select("#password").value;
 
-function renderDailyReports() {
-  const reports = projectDailyReports().sort((a, b) =>
-    String(b.date).localeCompare(String(a.date))
-  );
+    if (!email || !password) {
+      setAuthMessage(
+        "Enter an email and password first.",
+        true
+      );
 
-  $("dailyTableBody").innerHTML = reports.length
-    ? reports
-        .map(
-          (report) => `
-            <tr>
-              <td>${escapeHtml(formatDate(report.date))}</td>
-              <td>${escapeHtml(report.inspector || "-")}</td>
-              <td>${escapeHtml(report.contractor || "-")}</td>
-              <td>${escapeHtml(report.weather || "-")}</td>
-              <td>
-                <div class="table-actions">
-                  <button
-                    type="button"
-                    data-daily-edit="${escapeHtml(report.id)}"
-                  >
-                    Edit
-                  </button>
+      return;
+    }
 
-                  <button
-                    type="button"
-                    data-daily-delete="${escapeHtml(report.id)}"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </td>
-            </tr>
-          `
-        )
-        .join("")
-    : emptyRow("No daily reports have been saved.", 5);
+    if (password.length < 8) {
+      setAuthMessage(
+        "Password must contain at least 8 characters.",
+        true
+      );
 
-  document.querySelectorAll("[data-daily-edit]").forEach((button) => {
-    button.addEventListener("click", () => {
-      editDailyReport(button.dataset.dailyEdit);
+      return;
+    }
+
+    const {
+      error
+    } = await database.auth.signUp({
+      email: email,
+      password: password
     });
-  });
 
-  document.querySelectorAll("[data-daily-delete]").forEach((button) => {
-    button.addEventListener("click", () => {
-      deleteDailyReport(button.dataset.dailyDelete);
-    });
-  });
-}
+    if (error) {
+      setAuthMessage(error.message, true);
+      return;
+    }
 
-function editDailyReport(id) {
-  const report = state.dailyReports.find((item) => item.id === id);
-
-  if (!report) return;
-
-  $("dailyId").value = report.id;
-  $("dailyDate").value = report.date || "";
-  $("dailyInspector").value = report.inspector || "";
-  $("dailyWeather").value = report.weather || "";
-  $("dailyTemperature").value = report.temperature || "";
-  $("dailyContractor").value = report.contractor || "";
-  $("dailyWork").value = report.work || "";
-  $("dailyLabour").value = report.labour || "";
-  $("dailyEquipment").value = report.equipment || "";
-  $("dailyMaterials").value = report.materials || "";
-  $("dailyIssues").value = report.issues || "";
-  $("dailySafety").value = report.safety || "";
-  $("dailyComments").value = report.comments || "";
-
-  $("dailySaveStatus").textContent =
-    `Editing report from ${formatDate(report.date)}`;
-
-  updateDailyPreview();
-
-  $("dailyForm").scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
-}
-
-function deleteDailyReport(id) {
-  const report = state.dailyReports.find((item) => item.id === id);
-
-  if (!report) return;
-
-  if (!window.confirm(`Delete the report from ${formatDate(report.date)}?`)) {
-    return;
-  }
-
-  state.dailyReports = state.dailyReports.filter(
-    (item) => item.id !== id
-  );
-
-  if (!saveState()) return;
-
-  if ($("dailyId").value === id) {
-    newDailyReport();
-  }
-
-  renderAll();
-  showToast("Daily report deleted.");
-}
-
-$("printDailyButton").addEventListener("click", () => {
-  updateDailyPreview();
-  window.print();
-});
-
-/* =========================================================
-   SUBMITTALS
-========================================================= */
-
-function resetSubmittalForm() {
-  $("submittalForm").reset();
-  $("submittalId").value = "";
-  $("submittalStatus").value = "Draft";
-  $("submittalSubmittedDate").value = localDate();
-  $("submittalModalTitle").textContent = "New Submittal";
-  $("deleteSubmittalButton").classList.add("hidden");
-}
-
-$("newSubmittalButton").addEventListener("click", () => {
-  resetSubmittalForm();
-  openModal("submittalModal");
-  setTimeout(() => $("submittalNumber").focus(), 50);
-});
-
-function openSubmittal(id) {
-  const submittal = state.submittals.find((item) => item.id === id);
-
-  if (!submittal) return;
-
-  resetSubmittalForm();
-
-  $("submittalId").value = submittal.id;
-  $("submittalNumber").value = submittal.number || "";
-  $("submittalTitle").value = submittal.title || "";
-  $("submittalSpec").value = submittal.specSection || "";
-  $("submittalContractor").value = submittal.contractor || "";
-  $("submittalSubmittedDate").value = submittal.submittedDate || "";
-  $("submittalDueDate").value = submittal.dueDate || "";
-  $("submittalStatus").value = submittal.status || "Draft";
-  $("submittalComments").value = submittal.comments || "";
-
-  $("submittalModalTitle").textContent =
-    `${submittal.number} · ${submittal.title}`;
-
-  $("deleteSubmittalButton").classList.remove("hidden");
-
-  openModal("submittalModal");
-}
-
-$("submittalForm").addEventListener("submit", (event) => {
-  event.preventDefault();
-
-  const id = $("submittalId").value;
-  const number = $("submittalNumber").value.trim();
-  const title = $("submittalTitle").value.trim();
-
-  if (!number || !title) {
-    showToast("Submittal number and title are required.", true);
-    return;
-  }
-
-  const duplicate = state.submittals.find(
-    (item) =>
-      item.projectId === activeProjectId &&
-      item.id !== id &&
-      normalizeRfiNumber(item.number) === normalizeRfiNumber(number)
-  );
-
-  if (duplicate) {
-    showToast(
-      `Submittal ${number} already exists in this project.`,
-      true
+    setAuthMessage(
+      "Account created. Check your email if confirmation is required."
     );
-    return;
   }
+);
 
-  const existing = state.submittals.find((item) => item.id === id);
+select("#signoutBtn").addEventListener(
+  "click",
+  async function () {
+    const {
+      error
+    } = await database.auth.signOut();
 
-  const record = {
-    ...(existing || {}),
-    id: existing?.id || createId(),
-    projectId: activeProjectId,
-    number,
-    title,
-    specSection: $("submittalSpec").value.trim(),
-    contractor: $("submittalContractor").value.trim(),
-    submittedDate: $("submittalSubmittedDate").value,
-    dueDate: $("submittalDueDate").value,
-    status: $("submittalStatus").value,
-    comments: $("submittalComments").value.trim(),
-    createdAt: existing?.createdAt || timestamp(),
-    updatedAt: timestamp()
-  };
-
-  if (existing) {
-    const index = state.submittals.findIndex(
-      (item) => item.id === existing.id
-    );
-
-    state.submittals[index] = record;
-  } else {
-    state.submittals.push(record);
+    if (error) {
+      showToast(error.message);
+    }
   }
+);
 
-  if (!saveState()) return;
+select("#newProjectBtn").addEventListener(
+  "click",
+  openProjectForm
+);
 
-  renderAll();
-  closeModal("submittalModal");
-
-  showToast(existing ? "Submittal updated." : "Submittal created.");
-});
-
-function renderSubmittals() {
-  const submittals = projectSubmittals().sort((a, b) =>
-    String(a.number).localeCompare(String(b.number), undefined, {
-      numeric: true
-    })
-  );
-
-  $("submittalTableBody").innerHTML = submittals.length
-    ? submittals
-        .map(
-          (submittal) => `
-            <tr>
-              <td><strong>${escapeHtml(submittal.number)}</strong></td>
-              <td>${escapeHtml(submittal.title)}</td>
-              <td>${escapeHtml(submittal.specSection || "-")}</td>
-              <td>${escapeHtml(submittal.contractor || "-")}</td>
-              <td>${escapeHtml(formatDate(submittal.submittedDate))}</td>
-              <td>${escapeHtml(formatDate(submittal.dueDate))}</td>
-              <td>${statusPill(submittal.status)}</td>
-              <td>
-                <div class="table-actions">
-                  <button
-                    type="button"
-                    data-submittal-edit="${escapeHtml(submittal.id)}"
-                  >
-                    Open
-                  </button>
-                </div>
-              </td>
-            </tr>
-          `
-        )
-        .join("")
-    : emptyRow("No submittals have been created.", 8);
-
-  document.querySelectorAll("[data-submittal-edit]").forEach((button) => {
-    button.addEventListener("click", () => {
-      openSubmittal(button.dataset.submittalEdit);
-    });
-  });
-}
-
-$("deleteSubmittalButton").addEventListener("click", () => {
-  const id = $("submittalId").value;
-
-  if (!id) return;
-
-  const record = state.submittals.find((item) => item.id === id);
-
-  if (!record) return;
-
-  if (!window.confirm(`Delete submittal ${record.number}?`)) {
-    return;
+select("#projectBtn").addEventListener(
+  "click",
+  function () {
+    select("#projectSelect").focus();
   }
+);
 
-  state.submittals = state.submittals.filter(
-    (item) => item.id !== id
-  );
+select("#projectSelect").addEventListener(
+  "change",
+  async function () {
+    const selectedProject =
+      projects.find(
+        function (project) {
+          return (
+            project.id ===
+            select("#projectSelect").value
+          );
+        }
+      );
 
-  if (!saveState()) return;
+    if (!selectedProject) {
+      return;
+    }
 
-  renderAll();
-  closeModal("submittalModal");
+    currentProject =
+      selectedProject;
 
-  showToast("Submittal deleted.");
-});
+    currentRole =
+      selectedProject.member_role ||
+      "viewer";
 
-/* =========================================================
-   GLOBAL RENDER
-========================================================= */
+    select("#userRole").textContent =
+      currentRole;
 
-function renderAll() {
-  const project = currentProject();
+    activePage = "Dashboard";
 
-  if (!project) return;
+    syncProjectControls();
+    renderNavigation();
 
-  $("projectSelector").value = activeProjectId;
-  $("previewProject").textContent = project.name;
+    await renderPage();
+  }
+);
 
-  renderDashboard();
-  renderRfis();
-  renderDailyReports();
-  renderSubmittals();
-  updateDailyPreview();
-}
+select("#menuBtn").addEventListener(
+  "click",
+  function () {
+    document.body.classList.toggle("menu");
+  }
+);
 
-/* =========================================================
-   INITIAL SCREEN
-========================================================= */
+select("#modalClose").addEventListener(
+  "click",
+  closeModal
+);
 
-renderProjectSelector();
+select("#modalCancel").addEventListener(
+  "click",
+  closeModal
+);
+
+select("#modal").addEventListener(
+  "click",
+  function (event) {
+    if (event.target.id === "modal") {
+      closeModal();
+    }
+  }
+);
+
+select("#modalForm").addEventListener(
+  "submit",
+  async function (event) {
+    if (modalMode === "project") {
+      await saveProject(event);
+      return;
+    }
+
+    await saveRecord(event);
+  }
+);
+
+document.addEventListener(
+  "keydown",
+  function (event) {
+    if (event.key === "Escape") {
+      closeModal();
+      document.body.classList.remove("menu");
+    }
+  }
+);
+
+bootApplication();

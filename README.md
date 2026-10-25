@@ -1,2 +1,0 @@
-# ProjectPoint
-Construction administration.

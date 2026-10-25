@@ -1,854 +1,191 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>ProjectPoint | Construction Management</title>
-
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Contract Admin</title>
   <link rel="stylesheet" href="style.css">
-  <script src="app.js" defer></script>
 </head>
 
 <body>
-  <div id="toast" class="toast" aria-live="polite"></div>
 
-  <!-- LOGIN -->
-  <section id="loginScreen" class="login-screen">
-    <div class="login-hero">
-      <div class="brand brand-large">
-        <span class="brand-mark">PP</span>
-        <span>Project<span>Point</span></span>
-      </div>
+  <div id="toast" class="toast"></div>
 
-      <div class="hero-content">
-        <p class="eyebrow">CONSTRUCTION MANAGEMENT</p>
+  <section id="authView" class="auth">
+    <form id="authForm" class="auth-card">
 
-        <h1>
-          One platform.<br>
-          Every project.<br>
-          <span>Complete control.</span>
-        </h1>
+      <div class="logo">CA</div>
 
-        <p class="hero-description">
-          Manage RFIs, daily construction reports, submittals and project
-          records through one coordinated workspace.
-        </p>
+      <h1>Contract Administration</h1>
 
-        <div class="feature-list">
-          <div>✓ Multiple construction projects</div>
-          <div>✓ Consultant and Contractor workspaces</div>
-          <div>✓ Private internal review comments</div>
-          <div>✓ Draft and controlled official responses</div>
-          <div>✓ CSV register import and export</div>
-        </div>
-      </div>
-    </div>
+      <p>Secure project workspace</p>
 
-    <div class="login-panel">
-      <form id="loginForm" class="login-card">
-        <p class="eyebrow">PROJECT ACCESS</p>
-        <h2>Sign in to ProjectPoint</h2>
-        <p class="muted">Select a demonstration role and enter the workspace.</p>
+      <label>
+        Email
+        <input
+          id="email"
+          type="email"
+          required
+        >
+      </label>
 
-        <div class="role-selector">
-          <label class="role-option">
-            <input type="radio" name="loginRole" value="Consultant" checked>
-            <span>
-              <strong>Consultant</strong>
-              <small>Review and administration</small>
-            </span>
-          </label>
+      <label>
+        Password
+        <input
+          id="password"
+          type="password"
+          minlength="8"
+          required
+        >
+      </label>
 
-          <label class="role-option">
-            <input type="radio" name="loginRole" value="Contractor">
-            <span>
-              <strong>Contractor</strong>
-              <small>Submission and coordination</small>
-            </span>
-          </label>
-        </div>
+      <button
+        class="primary"
+        type="submit"
+      >
+        Sign in
+      </button>
 
-        <label>
-          Email address
-          <input
-            id="loginEmail"
-            type="email"
-            value="consultant@projectpoint.com"
-            required
-          >
-        </label>
+      <button
+        class="secondary"
+        type="button"
+        id="signupBtn"
+      >
+        Create account
+      </button>
 
-        <label>
-          Password
-          <input
-            id="loginPassword"
-            type="password"
-            value="Project123"
-            required
-          >
-        </label>
+      <small id="authMessage"></small>
 
-        <button class="primary full-width" type="submit">
-          Sign In
-        </button>
-
-        <div class="demo-box">
-          <strong>Demonstration accounts</strong>
-          <span>consultant@projectpoint.com</span>
-          <span>contractor@projectpoint.com</span>
-          <span>Password: Project123</span>
-        </div>
-      </form>
-    </div>
+    </form>
   </section>
 
-  <!-- APPLICATION -->
-  <section id="appShell" class="app-shell hidden">
-    <aside class="sidebar">
-      <div class="brand sidebar-brand">
-        <span class="brand-mark">PP</span>
-        <span>Project<span>Point</span></span>
+
+  <section
+    id="appView"
+    class="hidden"
+  >
+
+    <aside>
+
+      <div class="brand">
+        <span>CA</span>
+        <b>Contract Admin</b>
       </div>
 
-      <div class="project-sidebar-block">
-        <label for="projectSelector">ACTIVE PROJECT</label>
-        <select id="projectSelector"></select>
-        <button id="addProjectButton" type="button">+ New Project</button>
+      <button
+        id="projectBtn"
+        class="project-button"
+      >
+        Select project
+      </button>
+
+      <nav id="nav"></nav>
+
+      <div class="account">
+
+        <span id="userEmail"></span>
+
+        <span id="userRole"></span>
+
+        <button id="signoutBtn">
+          Sign out
+        </button>
+
       </div>
 
-      <nav class="navigation">
-        <p class="nav-heading">WORKSPACE</p>
-
-        <button class="nav-button active" data-page="dashboard" type="button">
-          <span>⌂</span> Dashboard
-        </button>
-
-        <button class="nav-button" data-page="rfi" type="button">
-          <span>?</span> RFIs
-          <strong id="navRfiCount">0</strong>
-        </button>
-
-        <button class="nav-button" data-page="daily" type="button">
-          <span>☷</span> Daily Reports
-        </button>
-
-        <button class="nav-button" data-page="submittals" type="button">
-          <span>⇧</span> Submittals
-        </button>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="user-card">
-          <div id="userInitials" class="user-avatar">LM</div>
-          <div>
-            <strong id="userEmail">User</strong>
-            <small id="userRole">Consultant</small>
-          </div>
-        </div>
-
-        <button id="logoutButton" type="button">Sign Out</button>
-      </div>
     </aside>
 
-    <main class="main-content">
-      <div class="prototype-warning">
-        Browser prototype: records are stored locally in this browser.
-        Role visibility is a demonstration and is not production security.
-      </div>
 
-      <!-- DASHBOARD -->
-      <section id="dashboardPage" class="page active-page">
-        <div class="page-header">
-          <div>
-            <p class="eyebrow">PROJECTPOINT WORKSPACE</p>
-            <h1>Dashboard</h1>
-            <p id="dashboardProjectName" class="muted"></p>
-          </div>
+    <main>
 
-          <button id="dashboardNewRfi" class="primary" type="button">
-            + New RFI
-          </button>
-        </div>
+      <header>
 
-        <div class="dashboard-grid">
-          <article class="stat-card">
-            <span>Total RFIs</span>
-            <strong id="totalRfis">0</strong>
-            <small>Selected project</small>
-          </article>
+        <button id="menuBtn">
+          ☰
+        </button>
 
-          <article class="stat-card warning-card">
-            <span>Open RFIs</span>
-            <strong id="openRfis">0</strong>
-            <small>Requires action</small>
-          </article>
+        <select id="projectSelect">
+        </select>
 
-          <article class="stat-card success-card">
-            <span>Responded RFIs</span>
-            <strong id="respondedRfis">0</strong>
-            <small>Official responses</small>
-          </article>
+        <button
+          id="newProjectBtn"
+          class="primary"
+        >
+          + Project
+        </button>
 
-          <article class="stat-card">
-            <span>Daily Reports</span>
-            <strong id="dailyReportCount">0</strong>
-            <small>Saved reports</small>
-          </article>
+        <a
+          id="oneDriveBtn"
+          class="secondary"
+          target="_blank"
+          rel="noopener"
+        >
+          Project files
+        </a>
 
-          <article class="stat-card">
-            <span>Submittals</span>
-            <strong id="submittalCount">0</strong>
-            <small>Project records</small>
-          </article>
-        </div>
+      </header>
 
-        <article class="panel">
-          <div class="panel-header">
-            <div>
-              <p class="eyebrow">RECENT ACTIVITY</p>
-              <h2>Recent RFIs</h2>
-            </div>
-          </div>
+      <section id="content"></section>
 
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>RFI No.</th>
-                  <th>Subject</th>
-                  <th>Discipline</th>
-                  <th>Status</th>
-                  <th>Due Date</th>
-                  <th>Updated</th>
-                </tr>
-              </thead>
-              <tbody id="recentRfiBody"></tbody>
-            </table>
-          </div>
-        </article>
-      </section>
-
-      <!-- RFI PAGE -->
-      <section id="rfiPage" class="page">
-        <div class="page-header">
-          <div>
-            <p class="eyebrow">CONTRACT ADMINISTRATION</p>
-            <h1>RFI Register</h1>
-            <p class="muted">
-              Create, submit, review, respond to and close project RFIs.
-            </p>
-          </div>
-
-          <div class="action-row">
-            <label class="file-button">
-              Import CSV
-              <input
-                id="rfiCsvInput"
-                type="file"
-                accept=".csv,text/csv"
-                hidden
-              >
-            </label>
-
-            <button id="exportRfiCsv" type="button">Export CSV</button>
-
-            <button id="newRfiButton" class="primary" type="button">
-              + Create RFI
-            </button>
-          </div>
-        </div>
-
-        <article class="panel">
-          <div class="filter-bar">
-            <input
-              id="rfiSearch"
-              type="search"
-              placeholder="Search RFI number, subject, discipline or contractor"
-            >
-
-            <select id="rfiStatusFilter">
-              <option value="">All Statuses</option>
-              <option>Draft</option>
-              <option>Open</option>
-              <option>Submitted</option>
-              <option>Under Review</option>
-              <option>Pending</option>
-              <option>Ready to Issue</option>
-              <option>Answered</option>
-              <option>Responded</option>
-              <option>Closed</option>
-              <option>Void</option>
-              <option>Cancelled</option>
-            </select>
-          </div>
-
-          <div class="table-scroll wide-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>RFI No.</th>
-                  <th>Subject</th>
-                  <th>Raised By</th>
-                  <th>Discipline</th>
-                  <th>Submitted</th>
-                  <th>Due</th>
-                  <th>Response</th>
-                  <th>Closing</th>
-                  <th>Status</th>
-                  <th>Priority</th>
-                  <th>Responsible</th>
-                  <th>Updated</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-
-              <tbody id="rfiTableBody"></tbody>
-            </table>
-          </div>
-        </article>
-      </section>
-
-      <!-- DAILY REPORT PAGE -->
-      <section id="dailyPage" class="page">
-        <div class="page-header">
-          <div>
-            <p class="eyebrow">FIELD MANAGEMENT</p>
-            <h1>Daily Construction Reports</h1>
-            <p class="muted">
-              Prepare and print project inspection and field reports.
-            </p>
-          </div>
-
-          <button id="newDailyButton" class="primary" type="button">
-            + New Report
-          </button>
-        </div>
-
-        <div class="split-layout">
-          <article class="panel report-editor">
-            <div class="panel-header">
-              <h2>Report Editor</h2>
-              <span id="dailySaveStatus" class="status-text">New report</span>
-            </div>
-
-            <form id="dailyForm">
-              <input id="dailyId" type="hidden">
-
-              <div class="form-grid">
-                <label>
-                  Report Date
-                  <input id="dailyDate" type="date" required>
-                </label>
-
-                <label>
-                  Inspector
-                  <input id="dailyInspector" type="text">
-                </label>
-
-                <label>
-                  Weather
-                  <input id="dailyWeather" type="text">
-                </label>
-
-                <label>
-                  Temperature
-                  <input id="dailyTemperature" type="text">
-                </label>
-
-                <label class="full-span">
-                  Contractor
-                  <input id="dailyContractor" type="text">
-                </label>
-
-                <label class="full-span">
-                  Work Performed
-                  <textarea id="dailyWork" rows="4"></textarea>
-                </label>
-
-                <label class="full-span">
-                  Labour / Personnel
-                  <textarea id="dailyLabour" rows="3"></textarea>
-                </label>
-
-                <label class="full-span">
-                  Equipment on Site
-                  <textarea id="dailyEquipment" rows="3"></textarea>
-                </label>
-
-                <label class="full-span">
-                  Materials Delivered / Used
-                  <textarea id="dailyMaterials" rows="3"></textarea>
-                </label>
-
-                <label class="full-span">
-                  Issues, Delays and Observations
-                  <textarea id="dailyIssues" rows="4"></textarea>
-                </label>
-
-                <label class="full-span">
-                  Health and Safety
-                  <textarea id="dailySafety" rows="3"></textarea>
-                </label>
-
-                <label class="full-span">
-                  Additional Comments
-                  <textarea id="dailyComments" rows="3"></textarea>
-                </label>
-              </div>
-
-              <div class="action-row form-actions">
-                <button class="primary" type="submit">Save Report</button>
-                <button id="clearDailyButton" type="button">Clear</button>
-                <button id="printDailyButton" type="button">
-                  Print / Save PDF
-                </button>
-              </div>
-            </form>
-          </article>
-
-          <article id="dailyPreview" class="report-preview">
-            <div class="report-heading">
-              <div class="report-logo">PP</div>
-              <div>
-                <strong>PROJECTPOINT</strong>
-                <span>DAILY CONSTRUCTION REPORT</span>
-              </div>
-            </div>
-
-            <div class="report-meta">
-              <div>
-                <span>Project</span>
-                <strong id="previewProject">-</strong>
-              </div>
-
-              <div>
-                <span>Date</span>
-                <strong id="previewDate">-</strong>
-              </div>
-
-              <div>
-                <span>Inspector</span>
-                <strong id="previewInspector">-</strong>
-              </div>
-
-              <div>
-                <span>Weather</span>
-                <strong id="previewWeather">-</strong>
-              </div>
-
-              <div>
-                <span>Temperature</span>
-                <strong id="previewTemperature">-</strong>
-              </div>
-            </div>
-
-            <div class="report-section">
-              <span>Contractor</span>
-              <p id="previewContractor">-</p>
-            </div>
-
-            <div class="report-section">
-              <span>Work Performed</span>
-              <p id="previewWork">-</p>
-            </div>
-
-            <div class="report-section">
-              <span>Labour / Personnel</span>
-              <p id="previewLabour">-</p>
-            </div>
-
-            <div class="report-section">
-              <span>Equipment on Site</span>
-              <p id="previewEquipment">-</p>
-            </div>
-
-            <div class="report-section">
-              <span>Materials Delivered / Used</span>
-              <p id="previewMaterials">-</p>
-            </div>
-
-            <div class="report-section">
-              <span>Issues, Delays and Observations</span>
-              <p id="previewIssues">-</p>
-            </div>
-
-            <div class="report-section">
-              <span>Health and Safety</span>
-              <p id="previewSafety">-</p>
-            </div>
-
-            <div class="report-section">
-              <span>Additional Comments</span>
-              <p id="previewComments">-</p>
-            </div>
-          </article>
-        </div>
-
-        <article class="panel">
-          <div class="panel-header">
-            <h2>Saved Daily Reports</h2>
-          </div>
-
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Inspector</th>
-                  <th>Contractor</th>
-                  <th>Weather</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="dailyTableBody"></tbody>
-            </table>
-          </div>
-        </article>
-      </section>
-
-      <!-- SUBMITTALS PAGE -->
-      <section id="submittalsPage" class="page">
-        <div class="page-header">
-          <div>
-            <p class="eyebrow">DOCUMENT CONTROL</p>
-            <h1>Submittal Register</h1>
-            <p class="muted">
-              Track contractor submissions and consultant reviews.
-            </p>
-          </div>
-
-          <button id="newSubmittalButton" class="primary" type="button">
-            + New Submittal
-          </button>
-        </div>
-
-        <article class="panel">
-          <div class="table-scroll wide-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Submittal No.</th>
-                  <th>Title</th>
-                  <th>Spec Section</th>
-                  <th>Contractor</th>
-                  <th>Submitted</th>
-                  <th>Due</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="submittalTableBody"></tbody>
-            </table>
-          </div>
-        </article>
-      </section>
     </main>
+
   </section>
 
-  <!-- RFI MODAL -->
-  <div id="rfiModal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-card modal-large">
-      <div class="modal-header">
-        <div>
-          <p class="eyebrow">RFI WORKSPACE</p>
-          <h2 id="rfiModalTitle">Create RFI</h2>
-        </div>
 
-        <button class="icon-button" data-close="rfiModal" type="button">×</button>
-      </div>
+  <div
+    id="modal"
+    class="modal hidden"
+  >
 
-      <form id="rfiForm">
-        <input id="rfiId" type="hidden">
+    <form
+      id="modalForm"
+      class="modal-card"
+    >
 
-        <div class="form-grid three-columns">
-          <label>
-            RFI Number
-            <input id="rfiNumber" type="text" required>
-          </label>
+      <div class="modal-head">
 
-          <label>
-            Status
-            <select id="rfiStatus">
-              <option>Draft</option>
-              <option>Open</option>
-              <option>Submitted</option>
-              <option>Under Review</option>
-              <option>Pending</option>
-              <option>Ready to Issue</option>
-              <option>Answered</option>
-              <option>Responded</option>
-              <option>Closed</option>
-              <option>Void</option>
-              <option>Cancelled</option>
-            </select>
-          </label>
+        <h2 id="modalTitle"></h2>
 
-          <label>
-            Priority
-            <select id="rfiPriority">
-              <option>Normal</option>
-              <option>High</option>
-              <option>Urgent</option>
-            </select>
-          </label>
-
-          <label class="full-span">
-            Subject
-            <input id="rfiSubject" type="text" required>
-          </label>
-
-          <label>
-            Raised By
-            <input id="rfiRaisedBy" type="text">
-          </label>
-
-          <label>
-            Discipline
-            <select id="rfiDiscipline">
-              <option>Civil</option>
-              <option>Structural</option>
-              <option>Mechanical</option>
-              <option>Electrical</option>
-              <option>Architectural</option>
-              <option>Process</option>
-              <option>Environmental</option>
-              <option>General</option>
-              <option>Other</option>
-            </select>
-          </label>
-
-          <label>
-            Responsible
-            <input id="rfiResponsible" type="text">
-          </label>
-
-          <label>
-            Contractor
-            <input id="rfiContractor" type="text">
-          </label>
-
-          <label>
-            Consultant
-            <input id="rfiConsultant" type="text">
-          </label>
-
-          <label>
-            Location
-            <input id="rfiLocation" type="text">
-          </label>
-
-          <label>
-            Drawing / Specification Reference
-            <input id="rfiReference" type="text">
-          </label>
-
-          <label>
-            Submitted Date
-            <input id="rfiSubmittedDate" type="date">
-          </label>
-
-          <label>
-            Due Date
-            <input id="rfiDueDate" type="date">
-          </label>
-
-          <label>
-            Response Date
-            <input id="rfiResponseDate" type="date">
-          </label>
-
-          <label>
-            Closing Date
-            <input id="rfiClosingDate" type="date">
-          </label>
-
-          <label class="full-span">
-            Question / Description
-            <textarea id="rfiQuestion" rows="5"></textarea>
-          </label>
-
-          <label class="full-span">
-            Attachment Names
-            <input
-              id="rfiAttachments"
-              type="file"
-              multiple
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.txt"
-            >
-            <small id="attachmentList" class="muted">
-              No attachments selected.
-            </small>
-          </label>
-        </div>
-
-        <div class="workspace-grid">
-          <section class="workspace-section">
-            <div class="section-heading">
-              <h3>Internal Comments</h3>
-              <span id="commentPrivacyMessage"></span>
-            </div>
-
-            <div id="rfiCommentList" class="comment-list"></div>
-
-            <label>
-              Add Private Comment
-              <textarea id="newRfiComment" rows="3"></textarea>
-            </label>
-
-            <button id="addRfiComment" type="button">
-              Add Private Comment
-            </button>
-          </section>
-
-          <section class="workspace-section">
-            <div class="section-heading">
-              <h3>Response Workspace</h3>
-              <span>Consultant controlled</span>
-            </div>
-
-            <label>
-              Draft Response
-              <textarea id="rfiDraftResponse" rows="6"></textarea>
-            </label>
-
-            <label>
-              Official Issued Response
-              <textarea id="rfiIssuedResponse" rows="6"></textarea>
-            </label>
-          </section>
-        </div>
-
-        <div class="modal-footer">
-          <button data-close="rfiModal" type="button">Cancel</button>
-          <button id="deleteRfiButton" class="danger hidden" type="button">
-            Delete
-          </button>
-          <button id="saveRfiButton" class="primary" type="submit">
-            Save RFI
-          </button>
-          <button id="issueResponseButton" class="success" type="button">
-            Issue Official Response
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- PROJECT MODAL -->
-  <div id="projectModal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div>
-          <p class="eyebrow">PROJECT SETUP</p>
-          <h2>Add Project</h2>
-        </div>
-
-        <button class="icon-button" data-close="projectModal" type="button">
+        <button
+          type="button"
+          id="modalClose"
+        >
           ×
         </button>
+
       </div>
 
-      <form id="projectForm">
-        <label>
-          Project Name
-          <input id="projectName" type="text" required>
-        </label>
+      <div id="modalFields"></div>
 
-        <label>
-          Project Number
-          <input id="projectNumber" type="text">
-        </label>
+      <div class="actions">
 
-        <label>
-          Client / Owner
-          <input id="projectClient" type="text">
-        </label>
-
-        <div class="modal-footer">
-          <button data-close="projectModal" type="button">Cancel</button>
-          <button class="primary" type="submit">Add Project</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- SUBMITTAL MODAL -->
-  <div id="submittalModal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div>
-          <p class="eyebrow">SUBMITTAL WORKSPACE</p>
-          <h2 id="submittalModalTitle">New Submittal</h2>
-        </div>
-
-        <button class="icon-button" data-close="submittalModal" type="button">
-          ×
+        <button
+          type="button"
+          class="secondary"
+          id="modalCancel"
+        >
+          Cancel
         </button>
+
+        <button
+          class="primary"
+          type="submit"
+        >
+          Save
+        </button>
+
       </div>
 
-      <form id="submittalForm">
-        <input id="submittalId" type="hidden">
+    </form>
 
-        <div class="form-grid">
-          <label>
-            Submittal Number
-            <input id="submittalNumber" type="text" required>
-          </label>
-
-          <label>
-            Status
-            <select id="submittalStatus">
-              <option>Draft</option>
-              <option>Submitted</option>
-              <option>Under Review</option>
-              <option>Revise and Resubmit</option>
-              <option>Approved as Noted</option>
-              <option>Approved</option>
-              <option>Closed</option>
-            </select>
-          </label>
-
-          <label class="full-span">
-            Title
-            <input id="submittalTitle" type="text" required>
-          </label>
-
-          <label>
-            Specification Section
-            <input id="submittalSpec" type="text">
-          </label>
-
-          <label>
-            Contractor
-            <input id="submittalContractor" type="text">
-          </label>
-
-          <label>
-            Submitted Date
-            <input id="submittalSubmittedDate" type="date">
-          </label>
-
-          <label>
-            Due Date
-            <input id="submittalDueDate" type="date">
-          </label>
-
-          <label class="full-span">
-            Review Comments
-            <textarea id="submittalComments" rows="5"></textarea>
-          </label>
-        </div>
-
-        <div class="modal-footer">
-          <button data-close="submittalModal" type="button">Cancel</button>
-          <button id="deleteSubmittalButton" class="danger hidden" type="button">
-            Delete
-          </button>
-          <button class="primary" type="submit">Save Submittal</button>
-        </div>
-      </form>
-    </div>
   </div>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="config.js"></script>
+
+  <script src="app.js"></script>
+
 </body>
 </html>
