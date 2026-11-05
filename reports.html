@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AquaFlow | Reports</title>
+
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+
+<div class="app-shell">
+
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="brand-icon">💧</div>
+            <div>
+                <h1 data-business-name>AquaFlow</h1>
+                <span>Water Delivery</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="./index.html" class="nav-link">▦ Dashboard</a>
+            <a href="./customer.html" class="nav-link">👥 Customers</a>
+            <a href="./delivery.html" class="nav-link">🚚 Deliveries</a>
+            <a href="./routes.html" class="nav-link">📍 Today's Route</a>
+            <a href="./payments.html" class="nav-link">₹ Payments</a>
+            <a href="./reports.html" class="nav-link active">📊 Reports</a>
+            <a href="./settings.html" class="nav-link">⚙ Settings</a>
+        </nav>
+
+        <div class="sidebar-footer">Phase 2</div>
+    </aside>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <main class="main-content">
+
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="menu-button" id="menuButton">☰</button>
+                <div>
+                    <h2>Reports</h2>
+                    <p>Business performance and balances</p>
+                </div>
+            </div>
+        </header>
+
+        <section class="page-content">
+
+            <div class="page-header">
+                <div>
+                    <h2>Business Reports</h2>
+                    <p>
+                        Review deliveries, sales, collections and
+                        customer balances.
+                    </p>
+                </div>
+
+                <button
+                    id="printReportButton"
+                    class="secondary-button"
+                    type="button"
+                >
+                    Print Report
+                </button>
+            </div>
+
+            <div class="toolbar">
+                <input
+                    id="reportStart"
+                    type="date"
+                    class="form-control report-date"
+                >
+
+                <input
+                    id="reportEnd"
+                    type="date"
+                    class="form-control report-date"
+                >
+
+                <button
+                    id="applyReportButton"
+                    class="primary-button"
+                >
+                    Apply
+                </button>
+            </div>
+
+            <div class="metric-grid">
+                <article class="metric-card">
+                    <span>Delivery Revenue</span>
+                    <strong id="reportSales">₹0</strong>
+                </article>
+
+                <article class="metric-card">
+                    <span>Payments Received</span>
+                    <strong id="reportPayments">₹0</strong>
+                </article>
+
+                <article class="metric-card">
+                    <span>Deliveries</span>
+                    <strong id="reportDeliveries">0</strong>
+                </article>
+
+                <article class="metric-card">
+                    <span>Bottles Delivered</span>
+                    <strong id="reportBottles">0</strong>
+                </article>
+
+                <article class="metric-card">
+                    <span>Empty Bottles Returned</span>
+                    <strong id="reportReturns">0</strong>
+                </article>
+
+                <article class="metric-card">
+                    <span>Total Outstanding</span>
+                    <strong id="reportOutstanding">₹0</strong>
+                </article>
+            </div>
+
+            <section class="content-card">
+                <div class="card-heading">
+                    <div>
+                        <h3>Customer Balance Report</h3>
+                        <p>Current customer receivables and bottle balances</p>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Delivery Value</th>
+                                <th>Paid</th>
+                                <th>Outstanding</th>
+                                <th>Bottles Out</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="customerReportBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+        </section>
+    </main>
+</div>
+
+<script src="./app.js"></script>
+<script src="./reports.js"></script>
+
+</body>
+</html>

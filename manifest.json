@@ -1,0 +1,15 @@
+{
+  "name": "AquaFlow Water Delivery Management",
+  "short_name": "AquaFlow",
+  "description": "Customer, water delivery, bottle and payment management application.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f8fc",
+  "theme_color": "#0766c6",
+  "orientation": "any",
+  "categories": [
+    "business",
+    "productivity"
+  ]
+}

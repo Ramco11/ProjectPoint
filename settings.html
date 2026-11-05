@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AquaFlow | Settings</title>
+
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+
+<div class="app-shell">
+
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="brand-icon">💧</div>
+            <div>
+                <h1 data-business-name>AquaFlow</h1>
+                <span>Water Delivery</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="./index.html" class="nav-link">▦ Dashboard</a>
+            <a href="./customer.html" class="nav-link">👥 Customers</a>
+            <a href="./delivery.html" class="nav-link">🚚 Deliveries</a>
+            <a href="./routes.html" class="nav-link">📍 Today's Route</a>
+            <a href="./payments.html" class="nav-link">₹ Payments</a>
+            <a href="./reports.html" class="nav-link">📊 Reports</a>
+            <a href="./settings.html" class="nav-link active">⚙ Settings</a>
+        </nav>
+
+        <div class="sidebar-footer">Phase 2</div>
+    </aside>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="menu-button" id="menuButton">☰</button>
+
+                <div>
+                    <h2>Settings</h2>
+                    <p>Business configuration and backup</p>
+                </div>
+            </div>
+        </header>
+
+        <section class="page-content">
+
+            <div class="settings-grid">
+
+                <section class="content-card">
+                    <div class="card-heading">
+                        <div>
+                            <h3>Business Settings</h3>
+                            <p>
+                                Configure pricing and company information.
+                            </p>
+                        </div>
+                    </div>
+
+                    <form id="settingsForm">
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="businessName">
+                                    Business Name
+                                </label>
+
+                                <input
+                                    id="businessName"
+                                    class="form-control"
+                                    required
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="businessPhone">
+                                    Phone
+                                </label>
+
+                                <input
+                                    id="businessPhone"
+                                    class="form-control"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="currency">
+                                    Currency
+                                </label>
+
+                                <select
+                                    id="currency"
+                                    class="form-control"
+                                >
+                                    <option value="INR">INR - ₹</option>
+                                    <option value="CAD">CAD - $</option>
+                                    <option value="USD">USD - $</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="defaultBottleRate">
+                                    Default Bottle Price
+                                </label>
+
+                                <input
+                                    id="defaultBottleRate"
+                                    type="number"
+                                    min="0"
+                                    class="form-control"
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="bottleDeposit">
+                                    Bottle Deposit
+                                </label>
+
+                                <input
+                                    id="bottleDeposit"
+                                    type="number"
+                                    min="0"
+                                    class="form-control"
+                                >
+                            </div>
+
+                            <div class="form-group full-width">
+                                <label for="businessAddress">
+                                    Business Address
+                                </label>
+
+                                <textarea
+                                    id="businessAddress"
+                                    class="form-control"
+                                ></textarea>
+                            </div>
+                        </div>
+
+                        <button class="primary-button settings-save">
+                            Save Settings
+                        </button>
+
+                    </form>
+                </section>
+
+                <section class="content-card">
+                    <div class="card-heading">
+                        <div>
+                            <h3>Data Backup</h3>
+                            <p>
+                                Export or restore AquaFlow browser data.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="backup-actions">
+                        <button
+                            id="exportBackupButton"
+                            class="primary-button"
+                        >
+                            Export Backup
+                        </button>
+
+                        <label class="secondary-button upload-button">
+                            Import Backup
+                            <input
+                                id="importBackupInput"
+                                type="file"
+                                accept=".json,application/json"
+                                hidden
+                            >
+                        </label>
+
+                        <button
+                            id="resetDataButton"
+                            class="danger-button"
+                        >
+                            Reset All Data
+                        </button>
+                    </div>
+
+                    <div class="info-strip">
+                        Backup contains customers, deliveries, payments
+                        and business settings.
+                    </div>
+                </section>
+
+            </div>
+
+        </section>
+    </main>
+</div>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<script src="./app.js"></script>
+<script src="./settings.js"></script>
+
+</body>
+</html>

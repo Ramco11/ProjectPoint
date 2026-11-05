@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AquaFlow | Customers</title>
+
+    <link rel="stylesheet" href="./style.css">
+    <link rel="manifest" href="./manifest.json">
+</head>
+
+<body>
+
+<div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="brand-icon">💧</div>
+            <div>
+                <h1 data-business-name>AquaFlow</h1>
+                <span>Water Delivery</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="./index.html" class="nav-link">▦ Dashboard</a>
+            <a href="./customer.html" class="nav-link active">👥 Customers</a>
+            <a href="./delivery.html" class="nav-link">🚚 Deliveries</a>
+            <a href="./routes.html" class="nav-link">📍 Today's Route</a>
+            <a href="./payments.html" class="nav-link">₹ Payments</a>
+            <a href="./reports.html" class="nav-link">📊 Reports</a>
+            <a href="./settings.html" class="nav-link">⚙ Settings</a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="connection-status">
+                <span class="status-dot"></span>
+                <span id="connectionText">Online</span>
+            </div>
+            Phase 2
+        </div>
+    </aside>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="menu-button" id="menuButton" type="button">
+                    ☰
+                </button>
+
+                <div>
+                    <h2>Customers</h2>
+                    <p>Customer accounts and balances</p>
+                </div>
+            </div>
+        </header>
+
+        <section class="page-content">
+
+            <div class="page-header">
+                <div>
+                    <h2>Customer Directory</h2>
+                    <p>
+                        Manage customer information, bottle balances and
+                        recurring delivery schedules.
+                    </p>
+                </div>
+
+                <button
+                    id="addCustomerButton"
+                    class="primary-button"
+                    type="button"
+                >
+                    + Add Customer
+                </button>
+            </div>
+
+            <section class="content-card">
+                <div class="toolbar">
+                    <div class="search-box">
+                        <span>⌕</span>
+                        <input
+                            id="customerSearch"
+                            type="search"
+                            placeholder="Search customer, phone or address"
+                        >
+                    </div>
+
+                    <select
+                        id="customerStatusFilter"
+                        class="filter-select"
+                    >
+                        <option value="All">All customers</option>
+                        <option value="Active">Active</option>
+                        <option value="Paused">Paused</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Schedule</th>
+                                <th>Rate</th>
+                                <th>Bottles Out</th>
+                                <th>Outstanding</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="customersTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div
+                    class="empty-state"
+                    id="customerEmptyState"
+                    hidden
+                >
+                    No customers found.
+                </div>
+            </section>
+
+        </section>
+    </main>
+</div>
+
+<div class="modal" id="customerModal">
+    <div class="modal-panel">
+        <form id="customerForm">
+            <div class="modal-header">
+                <h3 id="customerModalTitle">Add Customer</h3>
+
+                <button
+                    class="modal-close"
+                    id="closeCustomerModal"
+                    type="button"
+                >
+                    ×
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <input id="customerId" type="hidden">
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="customerName">Customer Name *</label>
+                        <input
+                            id="customerName"
+                            class="form-control"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customerPhone">Phone *</label>
+                        <input
+                            id="customerPhone"
+                            class="form-control"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customerEmail">Email</label>
+                        <input
+                            id="customerEmail"
+                            type="email"
+                            class="form-control"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customerStatus">Status</label>
+                        <select
+                            id="customerStatus"
+                            class="form-control"
+                        >
+                            <option>Active</option>
+                            <option>Paused</option>
+                            <option>Inactive</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="deliveryFrequency">
+                            Delivery Frequency
+                        </label>
+
+                        <select
+                            id="deliveryFrequency"
+                            class="form-control"
+                        >
+                            <option value="Daily">Daily</option>
+                            <option value="Alternate Day">
+                                Alternate Day
+                            </option>
+                            <option value="Weekly">Weekly</option>
+                            <option value="On Demand">On Demand</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="deliveryDay">
+                            Preferred Day
+                        </label>
+
+                        <select
+                            id="deliveryDay"
+                            class="form-control"
+                        >
+                            <option value="">Not applicable</option>
+                            <option>Monday</option>
+                            <option>Tuesday</option>
+                            <option>Wednesday</option>
+                            <option>Thursday</option>
+                            <option>Friday</option>
+                            <option>Saturday</option>
+                            <option>Sunday</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="nextDeliveryDate">
+                            Next Delivery
+                        </label>
+
+                        <input
+                            id="nextDeliveryDate"
+                            type="date"
+                            class="form-control"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bottleRate">
+                            Rate Per Bottle *
+                        </label>
+
+                        <input
+                            id="bottleRate"
+                            type="number"
+                            min="0"
+                            class="form-control"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customerDeposit">
+                            Bottle Deposit
+                        </label>
+
+                        <input
+                            id="customerDeposit"
+                            type="number"
+                            min="0"
+                            class="form-control"
+                        >
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="customerAddress">
+                            Delivery Address *
+                        </label>
+
+                        <textarea
+                            id="customerAddress"
+                            class="form-control"
+                            required
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="customerNotes">Notes</label>
+                        <textarea
+                            id="customerNotes"
+                            class="form-control"
+                        ></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button
+                    id="cancelCustomerButton"
+                    class="secondary-button"
+                    type="button"
+                >
+                    Cancel
+                </button>
+
+                <button class="primary-button" type="submit">
+                    Save Customer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="./app.js"></script>
+<script src="./customer.js"></script>
+
+</body>
+</html>

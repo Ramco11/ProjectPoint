@@ -1,308 +1,289 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0766c6">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+    <title>AquaFlow | Dashboard</title>
 
-  <meta
-    name="description"
-    content="ProjectPoint construction contract administration platform"
-  >
-
-  <title>ProjectPoint | Contract Administration</title>
-
-  <link
-    rel="stylesheet"
-    href="style.css"
-  >
+    <link rel="manifest" href="./manifest.json">
+    <link rel="stylesheet" href="./style.css">
 </head>
 
 <body>
 
-  <div
-    id="toast"
-    class="toast"
-    role="status"
-    aria-live="polite"
-  ></div>
+<div class="app-shell" id="dashboardPage">
 
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="brand-icon">💧</div>
 
-  <section
-    id="authView"
-    class="auth"
-  >
-
-    <form
-      id="authForm"
-      class="auth-card"
-      autocomplete="on"
-    >
-
-      <div class="logo">
-        PP
-      </div>
-
-      <h1>
-        ProjectPoint
-      </h1>
-
-      <p>
-        Construction Contract Administration
-      </p>
-
-      <label class="field">
-        Email
-
-        <input
-          id="email"
-          name="email"
-          type="email"
-          placeholder="you@example.com"
-          autocomplete="email"
-          required
-        >
-      </label>
-
-
-      <label class="field">
-        Password
-
-        <input
-          id="password"
-          name="password"
-          type="password"
-          placeholder="Minimum 8 characters"
-          minlength="8"
-          autocomplete="current-password"
-          required
-        >
-      </label>
-
-
-      <button
-        class="primary"
-        type="submit"
-      >
-        Sign in
-      </button>
-
-
-      <button
-        class="secondary"
-        type="button"
-        id="signupBtn"
-      >
-        Create account
-      </button>
-
-
-      <small
-        id="authMessage"
-        aria-live="polite"
-      ></small>
-
-    </form>
-
-  </section>
-
-
-  <section
-    id="appView"
-    class="hidden"
-  >
-
-    <aside id="sidebar">
-
-      <div class="brand">
-
-        <span>
-          PP
-        </span>
-
-        <div>
-          <strong>
-            ProjectPoint
-          </strong>
-
-          <small>
-            Contract Administration
-          </small>
+            <div>
+                <h1 data-business-name>AquaFlow</h1>
+                <span>Water Delivery</span>
+            </div>
         </div>
 
-      </div>
+        <nav class="sidebar-nav">
+            <a href="./index.html" class="nav-link active">
+                <span>▦</span> Dashboard
+            </a>
 
+            <a href="./customer.html" class="nav-link">
+                <span>👥</span> Customers
+            </a>
 
-      <button
-        id="projectBtn"
-        class="project-button"
-        type="button"
-      >
-        Select project
-      </button>
+            <a href="./delivery.html" class="nav-link">
+                <span>🚚</span> Deliveries
+            </a>
 
+            <a href="./routes.html" class="nav-link">
+                <span>📍</span> Today's Route
+            </a>
 
-      <nav
-        id="nav"
-        aria-label="Project navigation"
-      ></nav>
+            <a href="./payments.html" class="nav-link">
+                <span>₹</span> Payments
+            </a>
 
+            <a href="./reports.html" class="nav-link">
+                <span>📊</span> Reports
+            </a>
 
-      <div class="account">
+            <a href="./settings.html" class="nav-link">
+                <span>⚙</span> Settings
+            </a>
+        </nav>
 
-        <strong>
-          Signed in
-        </strong>
+        <div class="sidebar-footer">
+            <div class="connection-status">
+                <span class="status-dot"></span>
+                <span id="connectionText">Online</span>
+            </div>
 
-        <span id="userEmail"></span>
-
-        <span id="userRole"></span>
-
-
-        <button
-          id="signoutBtn"
-          type="button"
-        >
-          Sign out
-        </button>
-
-      </div>
-
+            Phase 2
+        </div>
     </aside>
 
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <main>
+    <main class="main-content">
 
-      <header class="topbar">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button
+                    class="menu-button"
+                    id="menuButton"
+                    type="button"
+                >
+                    ☰
+                </button>
 
-        <button
-          id="menuBtn"
-          type="button"
-          aria-label="Open navigation"
-        >
-          ☰
-        </button>
+                <div>
+                    <h2>Dashboard</h2>
+                    <p id="todayDate"></p>
+                </div>
+            </div>
 
+            <div class="user-profile">
+                <div class="user-avatar">AD</div>
 
-        <div class="project-selector">
+                <div class="user-details">
+                    <strong>Administrator</strong>
+                    <span>Business Owner</span>
+                </div>
+            </div>
+        </header>
 
-          <label for="projectSelect">
-            Project
-          </label>
+        <section class="page-content">
 
-          <select
-            id="projectSelect"
-            aria-label="Select project"
-          >
-            <option value="">
-              Loading projects...
-            </option>
-          </select>
+            <div class="welcome-banner">
+                <div>
+                    <p class="eyebrow">BUSINESS OVERVIEW</p>
 
-        </div>
+                    <h2>
+                        <span data-business-name>AquaFlow</span>
+                        Operations
+                    </h2>
 
+                    <p>
+                        Deliveries, bottle movement, customer balances
+                        and collections in one place.
+                    </p>
+                </div>
 
-        <div class="header-actions">
+                <div class="welcome-actions">
+                    <a
+                        href="./delivery.html?action=new"
+                        class="primary-button"
+                    >
+                        + New Delivery
+                    </a>
 
-          <button
-            id="newProjectBtn"
-            class="primary"
-            type="button"
-          >
-            + Project
-          </button>
+                    <a
+                        href="./routes.html"
+                        class="light-button"
+                    >
+                        Today's Route
+                    </a>
+                </div>
+            </div>
 
+            <div class="metric-grid">
 
-          <a
-            id="oneDriveBtn"
-            class="secondary"
-            href="https://1drv.ms/f/c/3c877a39345f9ac3/IgBNv7qrg64HR4iJn5vaIeJbAROgo7RTmNZunIRpyFpmb0U?e=0cWd8C"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Project files
-          </a>
+                <article class="metric-card">
+                    <span>Active Customers</span>
+                    <strong id="customerCount">0</strong>
+                </article>
 
-        </div>
+                <article class="metric-card">
+                    <span>Today's Deliveries</span>
+                    <strong id="todayDeliveryCount">0</strong>
+                </article>
 
-      </header>
+                <article class="metric-card">
+                    <span>Completed Today</span>
+                    <strong id="completedDeliveryCount">0</strong>
+                </article>
 
+                <article class="metric-card">
+                    <span>Outstanding</span>
+                    <strong id="outstandingAmount">₹0</strong>
+                </article>
 
-      <section
-        id="content"
-        tabindex="-1"
-      ></section>
+                <article class="metric-card">
+                    <span>Today's Sales</span>
+                    <strong id="todaySales">₹0</strong>
+                </article>
 
+                <article class="metric-card">
+                    <span>Today's Collection</span>
+                    <strong id="todayCollection">₹0</strong>
+                </article>
+
+                <article class="metric-card">
+                    <span>Bottles With Customers</span>
+                    <strong id="bottleBalance">0</strong>
+                </article>
+
+            </div>
+
+            <div class="dashboard-grid">
+
+                <section class="content-card">
+                    <div class="card-heading">
+                        <div>
+                            <h3>Recent Deliveries</h3>
+                            <p>Latest customer activity</p>
+                        </div>
+
+                        <a href="./delivery.html" class="text-link">
+                            View Deliveries
+                        </a>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Date</th>
+                                    <th>Bottles</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="recentDeliveriesBody"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="content-card">
+                    <div class="card-heading">
+                        <div>
+                            <h3>Quick Actions</h3>
+                            <p>Common daily tasks</p>
+                        </div>
+                    </div>
+
+                    <div class="vertical-actions">
+                        <a
+                            href="./customer.html?action=new"
+                            class="quick-action"
+                        >
+                            <span class="quick-icon">👤</span>
+                            <div>
+                                <strong>Add Customer</strong>
+                                <p>Create customer account</p>
+                            </div>
+                        </a>
+
+                        <a
+                            href="./delivery.html?action=new"
+                            class="quick-action"
+                        >
+                            <span class="quick-icon">🚚</span>
+                            <div>
+                                <strong>New Delivery</strong>
+                                <p>Record bottle delivery</p>
+                            </div>
+                        </a>
+
+                        <a
+                            href="./payments.html?action=new"
+                            class="quick-action"
+                        >
+                            <span class="quick-icon">₹</span>
+                            <div>
+                                <strong>Record Payment</strong>
+                                <p>Add payment received</p>
+                            </div>
+                        </a>
+
+                        <a href="./reports.html" class="quick-action">
+                            <span class="quick-icon">📊</span>
+                            <div>
+                                <strong>Reports</strong>
+                                <p>Review business performance</p>
+                            </div>
+                        </a>
+                    </div>
+                </section>
+
+            </div>
+
+            <section class="content-card">
+                <div class="card-heading">
+                    <div>
+                        <h3>Outstanding Customers</h3>
+                        <p>Customers with unpaid delivery balances</p>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Bottles With Customer</th>
+                                <th>Outstanding</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="outstandingCustomersBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+        </section>
     </main>
+</div>
 
-  </section>
+<div class="toast-container" id="toastContainer"></div>
 
-
-  <div
-    id="modal"
-    class="modal hidden"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="modalTitle"
-  >
-
-    <form
-      id="modalForm"
-      class="modal-card"
-    >
-
-      <div class="modal-head">
-
-        <h2 id="modalTitle">
-          Record
-        </h2>
-
-
-        <button
-          type="button"
-          id="modalClose"
-          aria-label="Close dialog"
-        >
-          ×
-        </button>
-
-      </div>
-
-
-      <div id="modalFields"></div>
-
-
-      <div class="actions">
-
-        <button
-          type="button"
-          class="secondary"
-          id="modalCancel"
-        >
-          Cancel
-        </button>
-
-
-        <button
-          class="primary"
-          type="submit"
-        >
-          Save
-        </button>
-
-      </div>
-
-    </form>
-
-  </div>
-
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
-<script src="app.js"></script>
+<script src="./app.js"></script>
 
 </body>
 </html>

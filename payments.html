@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AquaFlow | Payments</title>
+
+    <link rel="stylesheet" href="./style.css">
+    <link rel="manifest" href="./manifest.json">
+</head>
+
+<body>
+
+<div class="app-shell">
+
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="brand-icon">💧</div>
+            <div>
+                <h1 data-business-name>AquaFlow</h1>
+                <span>Water Delivery</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="./index.html" class="nav-link">▦ Dashboard</a>
+            <a href="./customer.html" class="nav-link">👥 Customers</a>
+            <a href="./delivery.html" class="nav-link">🚚 Deliveries</a>
+            <a href="./routes.html" class="nav-link">📍 Today's Route</a>
+            <a href="./payments.html" class="nav-link active">₹ Payments</a>
+            <a href="./reports.html" class="nav-link">📊 Reports</a>
+            <a href="./settings.html" class="nav-link">⚙ Settings</a>
+        </nav>
+
+        <div class="sidebar-footer">Phase 2</div>
+    </aside>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <main class="main-content">
+
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="menu-button" id="menuButton">☰</button>
+                <div>
+                    <h2>Payments</h2>
+                    <p>Customer collections and balances</p>
+                </div>
+            </div>
+        </header>
+
+        <section class="page-content">
+
+            <div class="page-header">
+                <div>
+                    <h2>Payment Register</h2>
+                    <p>
+                        Record customer payments and monitor outstanding
+                        balances.
+                    </p>
+                </div>
+
+                <button
+                    class="primary-button"
+                    id="addPaymentButton"
+                >
+                    + Record Payment
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <article class="stat-card">
+                    <span class="stat-label">Total Received</span>
+                    <strong class="stat-value" id="paymentsReceived">₹0</strong>
+                </article>
+
+                <article class="stat-card">
+                    <span class="stat-label">Delivery Value</span>
+                    <strong class="stat-value" id="paymentDeliveryValue">₹0</strong>
+                </article>
+
+                <article class="stat-card">
+                    <span class="stat-label">Outstanding</span>
+                    <strong class="stat-value" id="paymentsOutstanding">₹0</strong>
+                </article>
+
+                <article class="stat-card">
+                    <span class="stat-label">Transactions</span>
+                    <strong class="stat-value" id="paymentRecordCount">0</strong>
+                </article>
+            </div>
+
+            <section class="content-card">
+
+                <div class="toolbar">
+                    <div class="search-box">
+                        <span>⌕</span>
+                        <input
+                            id="paymentSearch"
+                            placeholder="Search customer or reference"
+                        >
+                    </div>
+
+                    <select
+                        id="paymentMethodFilter"
+                        class="filter-select"
+                    >
+                        <option value="All">All methods</option>
+                        <option>Cash</option>
+                        <option>UPI</option>
+                        <option>Bank Transfer</option>
+                        <option>Card</option>
+                        <option>Cheque</option>
+                    </select>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Reference</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="paymentsTableBody"></tbody>
+                    </table>
+                </div>
+
+            </section>
+        </section>
+    </main>
+</div>
+
+<div class="modal" id="paymentModal">
+    <div class="modal-panel">
+        <form id="paymentForm">
+
+            <div class="modal-header">
+                <h3 id="paymentModalTitle">Record Payment</h3>
+
+                <button
+                    id="closePaymentModal"
+                    class="modal-close"
+                    type="button"
+                >
+                    ×
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <input id="paymentId" type="hidden">
+
+                <div class="balance-preview">
+                    <span>Customer Outstanding</span>
+                    <strong id="selectedCustomerBalance">₹0</strong>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="paymentCustomer">Customer *</label>
+
+                        <select
+                            id="paymentCustomer"
+                            class="form-control"
+                            required
+                        ></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="paymentDate">Payment Date *</label>
+                        <input
+                            id="paymentDate"
+                            class="form-control"
+                            type="date"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="paymentAmount">Amount *</label>
+                        <input
+                            id="paymentAmount"
+                            class="form-control"
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="paymentMethod">Method</label>
+                        <select
+                            id="paymentMethod"
+                            class="form-control"
+                        >
+                            <option>Cash</option>
+                            <option>UPI</option>
+                            <option>Bank Transfer</option>
+                            <option>Card</option>
+                            <option>Cheque</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="paymentReference">
+                            Reference
+                        </label>
+                        <input
+                            id="paymentReference"
+                            class="form-control"
+                        >
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="paymentNotes">Notes</label>
+                        <textarea
+                            id="paymentNotes"
+                            class="form-control"
+                        ></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button
+                    id="cancelPaymentButton"
+                    class="secondary-button"
+                    type="button"
+                >
+                    Cancel
+                </button>
+
+                <button class="primary-button" type="submit">
+                    Save Payment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<script src="./app.js"></script>
+<script src="./payments.js"></script>
+
+</body>
+</html>
