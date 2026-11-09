@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+
+<meta charset="utf-8">
+<meta
+name="viewport"
+content="width=device-width,initial-scale=1">
+
+<title>FarmSetu | AI Farm Assistant</title>
+
+<link
+rel="stylesheet"
+href="../css/global.css">
+
+<link
+rel="stylesheet"
+href="assistant.css">
+
+</head>
+
+<body>
+
+<main class="phone">
+
+<header class="topbar">
+
+<a
+class="back"
+href="../home/home.html">
+‹
+</a>
+
+<h1>AI Farm Assistant</h1>
+
+<button
+id="clearChat"
+class="clear-button"
+type="button">
+↻
+</button>
+
+</header>
+
+<section class="page">
+
+<div class="assistant-introduction">
+
+<div class="assistant-avatar">
+🤖
+</div>
+
+<div>
+
+<h2>Hello!</h2>
+
+<p>
+I'm your FarmSetu AI Assistant.
+How can I help your farm today?
+</p>
+
+</div>
+
+</div>
+
+<h3 class="question-title">
+What do you need help with?
+</h3>
+
+<div class="assistant-options">
+
+<button
+data-topic="crop"
+type="button">
+
+<span>🌱</span>
+
+<b>My Crop</b>
+
+<small>
+Crop guidance
+</small>
+
+</button>
+
+<button
+data-topic="pest"
+type="button">
+
+<span>🐛</span>
+
+<b>Pest Problem</b>
+
+<small>
+Identify issues
+</small>
+
+</button>
+
+<button
+data-topic="weather"
+type="button">
+
+<span>🌦️</span>
+
+<b>Weather</b>
+
+<small>
+Farm forecast
+</small>
+
+</button>
+
+<button
+data-topic="irrigation"
+type="button">
+
+<span>💧</span>
+
+<b>Irrigation</b>
+
+<small>
+Water guidance
+</small>
+
+</button>
+
+<button
+data-topic="organic"
+type="button">
+
+<span>🍃</span>
+
+<b>Organic Treatment</b>
+
+<small>
+Natural options
+</small>
+
+</button>
+
+<button
+data-topic="market"
+type="button">
+
+<span>📈</span>
+
+<b>Market Price</b>
+
+<small>
+Check prices
+</small>
+
+</button>
+
+</div>
+
+<div
+id="conversation"
+class="conversation">
+
+<div class="message assistant-message">
+
+<strong>FarmSetu AI</strong>
+
+<p>
+Select one of the farming topics above,
+or type your farming question below.
+</p>
+
+</div>
+
+</div>
+
+<form
+id="questionForm"
+class="question-form">
+
+<button
+id="photoButton"
+class="photo-button"
+type="button"
+title="Add crop photo">
+📷
+</button>
+
+<input
+id="questionInput"
+type="text"
+placeholder="Ask a farming question..."
+autocomplete="off">
+
+<button
+class="send-button"
+type="submit">
+➤
+</button>
+
+</form>
+
+<input
+id="photoInput"
+type="file"
+accept="image/*"
+hidden>
+
+<p class="assistant-disclaimer">
+AI suggestions are informational.
+For serious crop disease, pesticide,
+livestock, or safety concerns, confirm
+recommendations with a qualified
+agricultural professional.
+</p>
+
+</section>
+
+</main>
+
+<script src="../js/app.js"></script>
+<script src="assistant.js"></script>
+
+</body>
+
+</html>

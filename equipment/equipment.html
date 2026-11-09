@@ -1,0 +1,945 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="description"
+    content="Buy, sell and rent agricultural equipment with FarmSetu"
+  >
+
+  <title>FarmSetu | Farm Equipment</title>
+
+  <link
+    rel="stylesheet"
+    href="../css/global.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="equipment.css"
+  >
+</head>
+
+<body>
+
+<main class="phone equipment-app">
+
+  <!-- Header -->
+
+  <header class="equipment-header">
+
+    <div class="header-main">
+
+      <a
+        class="header-back"
+        href="../home/home.html"
+        aria-label="Return to home"
+      >
+        ‹
+      </a>
+
+      <div class="header-title">
+
+        <h1>Farm Equipment</h1>
+
+        <p>
+          Buy, sell or rent machinery
+        </p>
+
+      </div>
+
+      <button
+        id="savedHeaderButton"
+        class="header-icon-button"
+        type="button"
+        aria-label="Show saved equipment"
+      >
+        ♡
+
+        <span
+          id="savedCount"
+          class="saved-count"
+        >
+          0
+        </span>
+      </button>
+
+    </div>
+
+
+    <div class="equipment-search-row">
+
+      <label
+        class="equipment-search"
+        for="equipmentSearch"
+      >
+
+        <span>⌕</span>
+
+        <input
+          id="equipmentSearch"
+          type="search"
+          placeholder="Search tractors, tools, machinery..."
+          autocomplete="off"
+        >
+
+        <button
+          id="clearSearchButton"
+          class="clear-search"
+          type="button"
+          aria-label="Clear search"
+        >
+          ×
+        </button>
+
+      </label>
+
+      <button
+        id="openFilterButton"
+        class="filter-button"
+        type="button"
+        aria-label="Open equipment filters"
+      >
+        ☷
+
+        <span
+          id="filterIndicator"
+          class="filter-indicator"
+        ></span>
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <!-- Main page -->
+
+  <section class="equipment-page">
+
+    <!-- Transaction mode -->
+
+    <div
+      id="transactionTabs"
+      class="transaction-tabs"
+    >
+
+      <button
+        class="transaction-tab active"
+        type="button"
+        data-mode="all"
+      >
+        All Listings
+      </button>
+
+      <button
+        class="transaction-tab"
+        type="button"
+        data-mode="sale"
+      >
+        Buy
+      </button>
+
+      <button
+        class="transaction-tab"
+        type="button"
+        data-mode="rent"
+      >
+        Rent
+      </button>
+
+    </div>
+
+
+    <!-- Quick categories -->
+
+    <div
+      id="categoryTabs"
+      class="equipment-categories"
+      aria-label="Equipment categories"
+    >
+
+      <button
+        class="category-tab active"
+        type="button"
+        data-category="all"
+      >
+        All
+      </button>
+
+      <button
+        class="category-tab"
+        type="button"
+        data-category="tractor"
+      >
+        Tractors
+      </button>
+
+      <button
+        class="category-tab"
+        type="button"
+        data-category="implement"
+      >
+        Implements
+      </button>
+
+      <button
+        class="category-tab"
+        type="button"
+        data-category="irrigation"
+      >
+        Irrigation
+      </button>
+
+      <button
+        class="category-tab"
+        type="button"
+        data-category="harvester"
+      >
+        Harvesters
+      </button>
+
+      <button
+        class="category-tab"
+        type="button"
+        data-category="sprayer"
+      >
+        Sprayers
+      </button>
+
+    </div>
+
+
+    <!-- Featured banner -->
+
+    <section
+      id="equipmentBanner"
+      class="equipment-banner"
+    >
+
+      <div>
+
+        <span class="banner-label">
+          FARMSETU EQUIPMENT
+        </span>
+
+        <h2>
+          Find machinery for every farm
+        </h2>
+
+        <p>
+          Compare verified listings, rental prices and seller information.
+        </p>
+
+        <button
+          id="browseRentalButton"
+          type="button"
+        >
+          Browse Rentals
+        </button>
+
+      </div>
+
+      <div
+        class="banner-tractor"
+        aria-hidden="true"
+      >
+        🚜
+      </div>
+
+    </section>
+
+
+    <!-- Controls -->
+
+    <div class="results-toolbar">
+
+      <div>
+
+        <strong id="resultCount">
+          0 Equipment Listings
+        </strong>
+
+        <small id="resultsDescription">
+          Showing all available equipment
+        </small>
+
+      </div>
+
+      <label
+        class="sort-control"
+        for="sortSelect"
+      >
+
+        <span>Sort:</span>
+
+        <select id="sortSelect">
+
+          <option value="recommended">
+            Recommended
+          </option>
+
+          <option value="price-low">
+            Price: Low to High
+          </option>
+
+          <option value="price-high">
+            Price: High to Low
+          </option>
+
+          <option value="newest">
+            Newest First
+          </option>
+
+          <option value="rating">
+            Highest Rated
+          </option>
+
+        </select>
+
+      </label>
+
+    </div>
+
+
+    <!-- Active filters -->
+
+    <div
+      id="activeFilterChips"
+      class="active-filter-chips"
+      aria-live="polite"
+    ></div>
+
+
+    <!-- Equipment cards -->
+
+    <div
+      id="equipmentList"
+      class="equipment-list"
+      aria-live="polite"
+    ></div>
+
+
+    <!-- Empty state -->
+
+    <section
+      id="emptyEquipmentState"
+      class="equipment-empty"
+      hidden
+    >
+
+      <div>🚜</div>
+
+      <h2>
+        No equipment found
+      </h2>
+
+      <p>
+        Try changing the category, search term or equipment filters.
+      </p>
+
+      <button
+        id="resetEmptyButton"
+        class="primary-equipment-button"
+        type="button"
+      >
+        Clear All Filters
+      </button>
+
+    </section>
+
+  </section>
+
+
+  <!-- Bottom navigation -->
+
+  <nav
+    class="bottom-nav"
+    aria-label="FarmSetu navigation"
+  >
+
+    <a href="../home/home.html">
+
+      <span>⌂</span>
+
+      Home
+
+    </a>
+
+    <a
+      class="active"
+      href="equipment.html"
+    >
+
+      <span>🚜</span>
+
+      Equipment
+
+    </a>
+
+    <a
+      class="sell-navigation"
+      href="../marketplace/sell.html"
+    >
+
+      <span>＋</span>
+
+      Sell
+
+    </a>
+
+    <a href="../training/training.html">
+
+      <span>♧</span>
+
+      Learn
+
+    </a>
+
+    <a href="../profile/profile.html">
+
+      <span>♙</span>
+
+      Profile
+
+    </a>
+
+  </nav>
+
+
+  <!-- Filter panel backdrop -->
+
+  <div
+    id="filterBackdrop"
+    class="panel-backdrop"
+    hidden
+  ></div>
+
+
+  <!-- Advanced filter panel -->
+
+  <aside
+    id="filterPanel"
+    class="filter-panel"
+    aria-hidden="true"
+    aria-labelledby="filterPanelTitle"
+  >
+
+    <div class="panel-handle"></div>
+
+    <div class="panel-header">
+
+      <div>
+
+        <h2 id="filterPanelTitle">
+          Equipment Filters
+        </h2>
+
+        <p>
+          Narrow down available listings
+        </p>
+
+      </div>
+
+      <button
+        id="closeFilterButton"
+        class="panel-close"
+        type="button"
+        aria-label="Close filters"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <div class="filter-panel-content">
+
+      <fieldset class="filter-group">
+
+        <legend>
+          Transaction Type
+        </legend>
+
+        <div class="filter-option-grid">
+
+          <label class="selection-option">
+
+            <input
+              type="radio"
+              name="filterMode"
+              value="all"
+              checked
+            >
+
+            <span>All</span>
+
+          </label>
+
+          <label class="selection-option">
+
+            <input
+              type="radio"
+              name="filterMode"
+              value="sale"
+            >
+
+            <span>For Sale</span>
+
+          </label>
+
+          <label class="selection-option">
+
+            <input
+              type="radio"
+              name="filterMode"
+              value="rent"
+            >
+
+            <span>For Rent</span>
+
+          </label>
+
+        </div>
+
+      </fieldset>
+
+
+      <fieldset class="filter-group">
+
+        <legend>
+          Condition
+        </legend>
+
+        <div class="filter-option-grid">
+
+          <label class="checkbox-option">
+
+            <input
+              id="conditionNew"
+              type="checkbox"
+              value="new"
+            >
+
+            <span>New</span>
+
+          </label>
+
+          <label class="checkbox-option">
+
+            <input
+              id="conditionUsed"
+              type="checkbox"
+              value="used"
+            >
+
+            <span>Used</span>
+
+          </label>
+
+          <label class="checkbox-option">
+
+            <input
+              id="conditionCertified"
+              type="checkbox"
+              value="certified"
+            >
+
+            <span>Certified</span>
+
+          </label>
+
+        </div>
+
+      </fieldset>
+
+
+      <fieldset class="filter-group">
+
+        <legend>
+          Maximum Purchase Price
+        </legend>
+
+        <div class="price-range-display">
+
+          <span>₹0</span>
+
+          <strong id="maximumPriceDisplay">
+            ₹25,00,000
+          </strong>
+
+        </div>
+
+        <input
+          id="maximumPriceRange"
+          class="price-range"
+          type="range"
+          min="50000"
+          max="2500000"
+          step="50000"
+          value="2500000"
+        >
+
+      </fieldset>
+
+
+      <fieldset class="filter-group">
+
+        <legend>
+          Location
+        </legend>
+
+        <select id="locationFilter">
+
+          <option value="all">
+            All Gujarat
+          </option>
+
+          <option value="Rajkot">
+            Rajkot
+          </option>
+
+          <option value="Ahmedabad">
+            Ahmedabad
+          </option>
+
+          <option value="Vadodara">
+            Vadodara
+          </option>
+
+          <option value="Surat">
+            Surat
+          </option>
+
+          <option value="Jamnagar">
+            Jamnagar
+          </option>
+
+          <option value="Junagadh">
+            Junagadh
+          </option>
+
+        </select>
+
+      </fieldset>
+
+
+      <fieldset class="filter-group">
+
+        <legend>
+          Seller & Availability
+        </legend>
+
+        <label class="toggle-option">
+
+          <span>
+
+            <b>Verified sellers only</b>
+
+            <small>
+              Show sellers approved by FarmSetu
+            </small>
+
+          </span>
+
+          <input
+            id="verifiedFilter"
+            type="checkbox"
+          >
+
+        </label>
+
+        <label class="toggle-option">
+
+          <span>
+
+            <b>Available now</b>
+
+            <small>
+              Hide reserved or unavailable listings
+            </small>
+
+          </span>
+
+          <input
+            id="availableFilter"
+            type="checkbox"
+          >
+
+        </label>
+
+      </fieldset>
+
+    </div>
+
+
+    <div class="filter-panel-actions">
+
+      <button
+        id="resetFiltersButton"
+        class="secondary-equipment-button"
+        type="button"
+      >
+        Reset
+      </button>
+
+      <button
+        id="applyFiltersButton"
+        class="primary-equipment-button"
+        type="button"
+      >
+        Show Equipment
+      </button>
+
+    </div>
+
+  </aside>
+
+
+  <!-- Equipment details modal -->
+
+  <div
+    id="detailsBackdrop"
+    class="details-backdrop"
+    hidden
+  ></div>
+
+  <section
+    id="equipmentDetailsModal"
+    class="equipment-details-modal"
+    aria-hidden="true"
+    aria-labelledby="detailsTitle"
+  >
+
+    <div
+      id="detailsHero"
+      class="details-hero"
+    >
+
+      <button
+        id="closeDetailsButton"
+        class="details-close"
+        type="button"
+        aria-label="Close equipment details"
+      >
+        ×
+      </button>
+
+      <button
+        id="detailsFavoriteButton"
+        class="details-favorite"
+        type="button"
+        aria-label="Save equipment listing"
+      >
+        ♡
+      </button>
+
+      <div
+        id="detailsIcon"
+        class="details-icon"
+      >
+        🚜
+      </div>
+
+    </div>
+
+
+    <div class="details-content">
+
+      <div class="details-title-row">
+
+        <div>
+
+          <span
+            id="detailsTransaction"
+            class="listing-type-badge"
+          >
+            FOR SALE
+          </span>
+
+          <h2 id="detailsTitle">
+            Equipment
+          </h2>
+
+        </div>
+
+        <span
+          id="detailsVerified"
+          class="verified-listing"
+        >
+          ✓ Verified
+        </span>
+
+      </div>
+
+
+      <div
+        id="detailsPrice"
+        class="details-price"
+      >
+        ₹0
+      </div>
+
+      <p
+        id="detailsLocation"
+        class="details-location"
+      >
+        📍 Gujarat
+      </p>
+
+
+      <div class="details-specification-grid">
+
+        <div>
+
+          <small>Condition</small>
+
+          <b id="detailsCondition">
+            Used
+          </b>
+
+        </div>
+
+        <div>
+
+          <small>Year</small>
+
+          <b id="detailsYear">
+            2021
+          </b>
+
+        </div>
+
+        <div>
+
+          <small>Power</small>
+
+          <b id="detailsPower">
+            45 HP
+          </b>
+
+        </div>
+
+        <div>
+
+          <small>Availability</small>
+
+          <b id="detailsAvailability">
+            Available
+          </b>
+
+        </div>
+
+      </div>
+
+
+      <section class="details-section">
+
+        <h3>
+          Description
+        </h3>
+
+        <p id="detailsDescription">
+          Equipment description
+        </p>
+
+      </section>
+
+
+      <section class="details-section">
+
+        <h3>
+          Seller Information
+        </h3>
+
+        <div class="equipment-seller-card">
+
+          <div class="seller-avatar">
+            👨‍🌾
+          </div>
+
+          <div>
+
+            <b id="detailsSeller">
+              Seller
+            </b>
+
+            <span id="detailsRating">
+              ⭐ 0
+            </span>
+
+            <small>
+              FarmSetu equipment seller
+            </small>
+
+          </div>
+
+          <button
+            id="detailsProfileButton"
+            type="button"
+          >
+            Profile
+          </button>
+
+        </div>
+
+      </section>
+
+
+      <div class="details-action-grid">
+
+        <button
+          id="detailsChatButton"
+          class="secondary-equipment-button"
+          type="button"
+        >
+          💬 Chat
+        </button>
+
+        <button
+          id="detailsCallButton"
+          class="secondary-equipment-button"
+          type="button"
+        >
+          ☎ Call
+        </button>
+
+        <button
+          id="detailsPrimaryButton"
+          class="primary-equipment-button"
+          type="button"
+        >
+          Make Offer
+        </button>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- Toast -->
+
+  <div
+    id="equipmentToast"
+    class="toast"
+    role="status"
+    aria-live="polite"
+  ></div>
+
+</main>
+
+
+<script src="../js/app.js"></script>
+<script src="equipment.js"></script>
+
+</body>
+</html>

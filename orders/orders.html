@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>My Orders | FarmSetu</title>
+
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="orders.css">
+</head>
+
+<body>
+    <header class="top-header">
+        <a class="brand" href="../index.html">
+            <span class="brand-logo">FS</span>
+
+            <span>
+                <strong>FarmSetu</strong>
+                <small>Order Management</small>
+            </span>
+        </a>
+
+        <a class="orders-home" href="../index.html">← Home</a>
+    </header>
+
+    <main>
+        <section class="orders-hero">
+            <span class="eyebrow">Sales and purchases</span>
+            <h1>My Orders</h1>
+            <p>Review product orders and update their status.</p>
+        </section>
+
+        <section class="orders-section">
+            <div class="summary-grid">
+                <article>
+                    <span>Total Orders</span>
+                    <strong id="totalOrders">0</strong>
+                </article>
+
+                <article>
+                    <span>Pending</span>
+                    <strong id="pendingOrders">0</strong>
+                </article>
+
+                <article>
+                    <span>Delivered</span>
+                    <strong id="deliveredOrders">0</strong>
+                </article>
+            </div>
+
+            <div class="orders-list" id="ordersList"></div>
+
+            <div class="no-orders" id="noOrders">
+                <span>📦</span>
+                <h2>No orders yet</h2>
+
+                <p>
+                    Open the marketplace and click Order on a product.
+                </p>
+
+                <a
+                    class="button button-primary"
+                    href="../marketplace/marketplace.html"
+                >
+                    Open Marketplace
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <nav class="bottom-navigation">
+        <a href="../index.html">
+            <span>🏠</span>
+            Home
+        </a>
+
+        <a href="../marketplace/marketplace.html">
+            <span>🛒</span>
+            Market
+        </a>
+
+        <a href="../equipment/equipment.html">
+            <span>🚜</span>
+            Equipment
+        </a>
+
+        <a href="../training/training.html">
+            <span>🎓</span>
+            Learn
+        </a>
+
+        <a class="active" href="orders.html">
+            <span>📦</span>
+            Orders
+        </a>
+    </nav>
+
+    <script src="orders.js"></script>
+</body>
+</html>

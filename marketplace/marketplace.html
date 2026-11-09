@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Marketplace | FarmSetu</title>
+
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="marketplace.css">
+</head>
+
+<body>
+    <header class="top-header">
+        <a class="brand" href="../index.html">
+            <span class="brand-logo">FS</span>
+
+            <span>
+                <strong>FarmSetu</strong>
+                <small>Farmer Marketplace</small>
+            </span>
+        </a>
+
+        <a class="back-link" href="../index.html">← Home</a>
+    </header>
+
+    <main>
+        <section class="market-hero">
+            <span class="eyebrow">Fresh from farmers</span>
+            <h1>Agricultural Marketplace</h1>
+
+            <p>
+                Search vegetables, fruits, grains, seeds and
+                organic farm products.
+            </p>
+
+            <div class="search-panel">
+                <input
+                    id="marketSearch"
+                    type="search"
+                    placeholder="Search products, locations or sellers"
+                >
+
+                <select id="categoryFilter">
+                    <option value="All">All categories</option>
+                    <option value="Vegetables">Vegetables</option>
+                    <option value="Fruits">Fruits</option>
+                    <option value="Grains">Grains</option>
+                    <option value="Seeds">Seeds</option>
+                    <option value="Organic">Organic</option>
+                </select>
+            </div>
+        </section>
+
+        <section class="market-section">
+            <div class="market-heading">
+                <div>
+                    <h2>Available products</h2>
+                    <p id="productCount">0 products found</p>
+                </div>
+
+                <button
+                    class="button button-primary"
+                    id="openListingForm"
+                    type="button"
+                >
+                    + Add Product
+                </button>
+            </div>
+
+            <div class="product-grid" id="productGrid"></div>
+
+            <div class="empty-state" id="emptyState">
+                <span>🌱</span>
+                <h3>No products found</h3>
+                <p>Try another search or add a new product.</p>
+            </div>
+        </section>
+    </main>
+
+    <div class="modal" id="listingModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div>
+                    <span class="eyebrow">Marketplace</span>
+                    <h2>Add a product</h2>
+                </div>
+
+                <button
+                    class="close-button"
+                    id="closeListingForm"
+                    type="button"
+                >
+                    ×
+                </button>
+            </div>
+
+            <form id="listingForm">
+                <div class="form-group">
+                    <label for="listingName">Product name</label>
+                    <input id="listingName" type="text" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="listingCategory">Category</label>
+
+                        <select id="listingCategory" required>
+                            <option value="">Select</option>
+                            <option value="Vegetables">Vegetables</option>
+                            <option value="Fruits">Fruits</option>
+                            <option value="Grains">Grains</option>
+                            <option value="Seeds">Seeds</option>
+                            <option value="Organic">Organic</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="listingPrice">Price per kg</label>
+
+                        <input
+                            id="listingPrice"
+                            type="number"
+                            min="1"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="listingQuantity">
+                            Quantity in kg
+                        </label>
+
+                        <input
+                            id="listingQuantity"
+                            type="number"
+                            min="1"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="listingLocation">Location</label>
+                        <input id="listingLocation" type="text" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="listingSeller">Seller name</label>
+                    <input id="listingSeller" type="text" required>
+                </div>
+
+                <p class="form-message" id="listingMessage"></p>
+
+                <button
+                    class="button button-primary full-width"
+                    type="submit"
+                >
+                    Publish Listing
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <nav class="bottom-navigation">
+        <a href="../index.html">
+            <span>🏠</span>
+            Home
+        </a>
+
+        <a class="active" href="marketplace.html">
+            <span>🛒</span>
+            Market
+        </a>
+
+        <a href="../equipment/equipment.html">
+            <span>🚜</span>
+            Equipment
+        </a>
+
+        <a href="../training/training.html">
+            <span>🎓</span>
+            Learn
+        </a>
+
+        <a href="../orders/orders.html">
+            <span>📦</span>
+            Orders
+        </a>
+    </nav>
+
+    <script src="marketplace.js"></script>
+</body>
+</html>

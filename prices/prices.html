@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Market Prices | FarmSetu</title>
+
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="prices.css">
+</head>
+
+<body>
+    <header class="top-header">
+        <a class="brand" href="../index.html">
+            <span class="brand-logo">FS</span>
+
+            <span>
+                <strong>FarmSetu</strong>
+                <small>Market Prices</small>
+            </span>
+        </a>
+
+        <a class="prices-home" href="../index.html">← Home</a>
+    </header>
+
+    <main>
+        <section class="prices-hero">
+            <span class="eyebrow">Price information</span>
+            <h1>Crop Market Prices</h1>
+
+            <p>
+                Sample prices for the frontend demonstration.
+                Live mandi data can be connected later.
+            </p>
+
+            <input
+                id="priceSearch"
+                type="search"
+                placeholder="Search crop or market"
+            >
+        </section>
+
+        <section class="prices-section">
+            <div class="price-warning">
+                <strong>Demonstration data:</strong>
+                Verify the current rate with the relevant mandi,
+                buyer or official market source before selling.
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Crop</th>
+                            <th>Market</th>
+                            <th>Minimum</th>
+                            <th>Average</th>
+                            <th>Maximum</th>
+                            <th>Trend</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="priceTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <nav class="bottom-navigation">
+        <a href="../index.html">
+            <span>🏠</span>
+            Home
+        </a>
+
+        <a href="../marketplace/marketplace.html">
+            <span>🛒</span>
+            Market
+        </a>
+
+        <a href="../equipment/equipment.html">
+            <span>🚜</span>
+            Equipment
+        </a>
+
+        <a href="../training/training.html">
+            <span>🎓</span>
+            Learn
+        </a>
+
+        <a href="../orders/orders.html">
+            <span>📦</span>
+            Orders
+        </a>
+    </nav>
+
+    <script src="prices.js"></script>
+</body>
+</html>

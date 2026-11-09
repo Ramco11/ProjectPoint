@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>FarmSetu | Product Details</title>
+
+  <link
+    rel="stylesheet"
+    href="../css/global.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="marketplace.css"
+  >
+
+  <style>
+    .product-hero {
+      position: relative;
+      height: 265px;
+      background:
+        linear-gradient(
+          135deg,
+          #e7f5ea,
+          #cfe9d5
+        );
+
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .product-hero-icon {
+      font-size: 110px;
+    }
+
+    .product-back,
+    .favorite-button {
+      position: absolute;
+      top: 18px;
+
+      width: 42px;
+      height: 42px;
+
+      display: grid;
+      place-items: center;
+
+      border: 0;
+      border-radius: 50%;
+
+      background: rgba(255,255,255,.94);
+
+      box-shadow:
+        0 5px 16px
+        rgba(0,0,0,.12);
+
+      cursor: pointer;
+
+      text-decoration: none;
+      color: #17231b;
+
+      font-size: 22px;
+    }
+
+    .product-back {
+      left: 16px;
+    }
+
+    .favorite-button {
+      right: 16px;
+    }
+
+    .product-content {
+      padding-bottom: 110px;
+    }
+
+    .product-category {
+      display: inline-flex;
+
+      padding: 5px 9px;
+
+      background: #e4f6e9;
+      color: #087a36;
+
+      border-radius: 100px;
+
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .product-title-row {
+      display: flex;
+
+      align-items: flex-start;
+      justify-content: space-between;
+
+      gap: 10px;
+
+      margin-top: 10px;
+    }
+
+    .product-title-row h1 {
+      margin: 0;
+      font-size: 25px;
+    }
+
+    .organic-badge {
+      white-space: nowrap;
+
+      background: #e4f6e9;
+      color: #087a36;
+
+      border-radius: 20px;
+
+      padding: 6px 9px;
+
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .product-price {
+      margin-top: 9px;
+
+      color: #087a36;
+
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .product-location {
+      margin: 7px 0;
+
+      color: #6d7a71;
+      font-size: 13px;
+    }
+
+    .product-divider {
+      border: 0;
+      border-top: 1px solid #e1e9e3;
+
+      margin: 18px 0;
+    }
+
+    .seller-card {
+      display: grid;
+
+      grid-template-columns:
+        55px 1fr auto;
+
+      gap: 11px;
+
+      align-items: center;
+
+      padding: 12px;
+
+      background: #f6faf7;
+
+      border: 1px solid #dfebe2;
+      border-radius: 15px;
+    }
+
+    .seller-avatar {
+      width: 55px;
+      height: 55px;
+
+      display: grid;
+      place-items: center;
+
+      background: #dff2e4;
+
+      border-radius: 50%;
+
+      font-size: 30px;
+    }
+
+    .seller-info b {
+      display: block;
+    }
+
+    .seller-info span {
+      display: block;
+
+      margin-top: 3px;
+
+      color: #68746c;
+
+      font-size: 11px;
+    }
+
+    .seller-profile {
+      color: #087a36;
+
+      text-decoration: none;
+
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .details-grid {
+      display: grid;
+
+      grid-template-columns:
+        1fr 1fr;
+
+      gap: 10px;
+
+      margin-top: 12px;
+    }
+
+    .detail-box {
+      padding: 12px;
+
+      background: #f6faf7;
+
+      border-radius: 12px;
+    }
+
+    .detail-box small {
+      display: block;
+
+      color: #718077;
+
+      margin-bottom: 4px;
+    }
+
+    .description {
+      color: #59675e;
+
+      line-height: 1.65;
+
+      font-size: 13px;
+    }
+
+    .quality-list {
+      padding: 0;
+      list-style: none;
+    }
+
+    .quality-list li {
+      margin: 9px 0;
+
+      color: #59675e;
+
+      font-size: 13px;
+    }
+
+    .quality-list li::before {
+      content: "✓";
+
+      display: inline-grid;
+      place-items: center;
+
+      width: 19px;
+      height: 19px;
+
+      margin-right: 8px;
+
+      background: #087a36;
+      color: white;
+
+      border-radius: 50%;
+
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .purchase-bar {
+      position: fixed;
+
+      bottom: 0;
+      left: 50%;
+
+      transform: translateX(-50%);
+
+      width: min(100%, 430px);
+
+      padding: 11px 15px;
+
+      background: white;
+
+      border-top:
+        1px solid #dfe7e1;
+
+      display: grid;
+
+      grid-template-columns:
+        55px 1fr 1.45fr;
+
+      gap: 8px;
+
+      z-index: 20;
+    }
+
+    .chat-button {
+      border:
+        1px solid #087a36;
+
+      border-radius: 12px;
+
+      background: white;
+
+      color: #087a36;
+
+      font-size: 20px;
+
+      cursor: pointer;
+    }
+
+    .offer-button,
+    .buy-button {
+      border: 0;
+
+      border-radius: 12px;
+
+      padding: 13px 8px;
+
+      font-weight: 800;
+
+      cursor: pointer;
+    }
+
+    .offer-button {
+      background: #edf7ef;
+      color: #087a36;
+    }
+
+    .buy-button {
+      background: #087a36;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+
+<main class="phone">
+
+  <section class="product-hero">
+
+    <a
+      class="product-back"
+      href="marketplace.html"
+      aria-label="Back to market"
+    >
+      ‹
+    </a>
+
+    <button
+      id="favoriteButton"
+      class="favorite-button"
+      type="button"
+      aria-label="Add product to favorites"
+    >
+      ♡
+    </button>
+
+    <div
+      id="productIcon"
+      class="product-hero-icon"
+    >
+      🍅
+    </div>
+
+  </section>
+
+
+  <section class="page product-content">
+
+    <span
+      id="productCategory"
+      class="product-category"
+    >
+      Vegetables
+    </span>
+
+
+    <div class="product-title-row">
+
+      <h1 id="productName">
+        Organic Tomatoes
+      </h1>
+
+      <span
+        id="organicBadge"
+        class="organic-badge"
+      >
+        ● ORGANIC
+      </span>
+
+    </div>
+
+
+    <div
+      id="productPrice"
+      class="product-price"
+    >
+      ₹30 / kg
+    </div>
+
+    <p
+      id="productLocation"
+      class="product-location"
+    >
+      📍 Rajkot, Gujarat
+    </p>
+
+
+    <hr class="product-divider">
+
+
+    <h3>Seller</h3>
+
+    <div class="seller-card">
+
+      <div class="seller-avatar">
+        👨‍🌾
+      </div>
+
+      <div class="seller-info">
+
+        <b>Rameshbhai Patel ✓</b>
+
+        <span>
+          ⭐ 4.8 · 120 reviews
+        </span>
+
+        <span>
+          Verified FarmSetu Farmer
+        </span>
+
+      </div>
+
+      <a
+        class="seller-profile"
+        href="../profile/profile.html"
+      >
+        Profile
+      </a>
+
+    </div>
+
+
+    <hr class="product-divider">
+
+
+    <h3>Product Details</h3>
+
+    <div class="details-grid">
+
+      <div class="detail-box">
+        <small>Available</small>
+        <b id="productQuantity">
+          500 kg
+        </b>
+      </div>
+
+      <div class="detail-box">
+        <small>Minimum Order</small>
+        <b>10 kg</b>
+      </div>
+
+      <div class="detail-box">
+        <small>Harvest</small>
+        <b>Fresh</b>
+      </div>
+
+      <div class="detail-box">
+        <small>Delivery</small>
+        <b>Available</b>
+      </div>
+
+    </div>
+
+
+    <hr class="product-divider">
+
+
+    <h3>Description</h3>
+
+    <p
+      id="productDescription"
+      class="description"
+    >
+      Fresh organic tomatoes grown locally using
+      sustainable farming methods. Harvested at
+      the right stage for freshness and quality.
+      Available directly from the farmer.
+    </p>
+
+
+    <h3>Product Quality</h3>
+
+    <ul class="quality-list">
+
+      <li>
+        Direct from local farm
+      </li>
+
+      <li>
+        Freshly harvested
+      </li>
+
+      <li>
+        Carefully selected produce
+      </li>
+
+      <li>
+        Bulk orders available
+      </li>
+
+    </ul>
+
+
+    <hr class="product-divider">
+
+
+    <h3>Farm Location</h3>
+
+    <div class="card">
+
+      <b>📍 Rajkot, Gujarat</b>
+
+      <p class="muted">
+        Exact pickup/delivery details can be
+        shared after the order is confirmed.
+      </p>
+
+    </div>
+
+  </section>
+
+
+  <div class="purchase-bar">
+
+    <button
+      id="chatButton"
+      class="chat-button"
+      type="button"
+      title="Chat with seller"
+    >
+      💬
+    </button>
+
+    <button
+      id="offerButton"
+      class="offer-button"
+      type="button"
+    >
+      Make Offer
+    </button>
+
+    <button
+      id="buyButton"
+      class="buy-button"
+      type="button"
+    >
+      Buy Now
+    </button>
+
+  </div>
+
+
+  <div
+    id="productToast"
+    class="toast"
+  ></div>
+
+</main>
+
+
+<script src="../js/app.js"></script>
+
+<script>
+document.addEventListener(
+  "DOMContentLoaded",
+  function () {
+
+    const products = {
+      1: {
+        name: "Organic Tomatoes",
+        icon: "🍅",
+        price: "₹30 / kg",
+        category: "Vegetables",
+        location: "Rajkot, Gujarat",
+        quantity: "500 kg",
+        organic: true,
+        description:
+          "Fresh organic tomatoes grown locally using sustainable farming methods. Harvested at the right stage for freshness and quality. Available directly from the farmer."
+      },
+
+      2: {
+        name: "Fresh Onions",
+        icon: "🧅",
+        price: "₹22 / kg",
+        category: "Vegetables",
+        location: "Jamnagar, Gujarat",
+        quantity: "900 kg",
+        organic: false,
+        description:
+          "Fresh farm onions supplied directly by a local farmer. Suitable for household, retail and bulk purchasing."
+      },
+
+      3: {
+        name: "Organic Wheat",
+        icon: "🌾",
+        price: "₹28 / kg",
+        category: "Grains",
+        location: "Surendranagar, Gujarat",
+        quantity: "1,200 kg",
+        organic: true,
+        description:
+          "Farm-grown wheat available for direct purchase. The listing is marked by the seller as organically grown."
+      }
+    };
+
+
+    const query =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const id =
+      query.get("id") || "1";
+
+    const product =
+      products[id] || products["1"];
+
+
+    document.getElementById(
+      "productIcon"
+    ).textContent =
+      product.icon;
+
+
+    document.getElementById(
+      "productName"
+    ).textContent =
+      product.name;
+
+
+    document.getElementById(
+      "productPrice"
+    ).textContent =
+      product.price;
+
+
+    document.getElementById(
+      "productCategory"
+    ).textContent =
+      product.category;
+
+
+    document.getElementById(
+      "productLocation"
+    ).textContent =
+      "📍 " + product.location;
+
+
+    document.getElementById(
+      "productQuantity"
+    ).textContent =
+      product.quantity;
+
+
+    document.getElementById(
+      "productDescription"
+    ).textContent =
+      product.description;
+
+
+    const organicBadge =
+      document.getElementById(
+        "organicBadge"
+      );
+
+    if (!product.organic) {
+      organicBadge.style.display =
+        "none";
+    }
+
+
+    const favoriteButton =
+      document.getElementById(
+        "favoriteButton"
+      );
+
+    favoriteButton.addEventListener(
+      "click",
+      function () {
+
+        const active =
+          favoriteButton.dataset.active
+          === "true";
+
+        if (active) {
+
+          favoriteButton.dataset.active =
+            "false";
+
+          favoriteButton.textContent =
+            "♡";
+
+          showProductToast(
+            "Removed from favorites"
+          );
+
+        } else {
+
+          favoriteButton.dataset.active =
+            "true";
+
+          favoriteButton.textContent =
+            "♥";
+
+          showProductToast(
+            "Added to favorites"
+          );
+
+        }
+
+      }
+    );
+
+
+    document.getElementById(
+      "chatButton"
+    ).addEventListener(
+      "click",
+      function () {
+
+        showProductToast(
+          "Seller chat will connect during the backend phase"
+        );
+
+      }
+    );
+
+
+    document.getElementById(
+      "offerButton"
+    ).addEventListener(
+      "click",
+      function () {
+
+        const offer =
+          window.prompt(
+            "Enter your offer price in ₹"
+          );
+
+        if (!offer) {
+          return;
+        }
+
+        showProductToast(
+          "Your ₹" +
+          offer +
+          " offer is ready to send"
+        );
+
+      }
+    );
+
+
+    document.getElementById(
+      "buyButton"
+    ).addEventListener(
+      "click",
+      function () {
+
+        showProductToast(
+          "Product added to your order"
+        );
+
+      }
+    );
+
+
+    function showProductToast(
+      message
+    ) {
+
+      const toast =
+        document.getElementById(
+          "productToast"
+        );
+
+      toast.textContent =
+        message;
+
+      toast.classList.add(
+        "show"
+      );
+
+      setTimeout(
+        function () {
+
+          toast.classList.remove(
+            "show"
+          );
+
+        },
+        2200
+      );
+
+    }
+
+  }
+);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,86 @@
+.prices-home {
+    color: var(--primary);
+    font-weight: 750;
+}
+
+.prices-hero {
+    padding: 58px max(20px, calc((100% - 1180px) / 2));
+    background: linear-gradient(135deg, #f1ebff, #fcfaff);
+}
+
+.prices-hero h1 {
+    font-size: clamp(2rem, 5vw, 3.3rem);
+}
+
+.prices-hero p {
+    max-width: 680px;
+    margin-bottom: 22px;
+    color: var(--muted);
+}
+
+.prices-hero input {
+    max-width: 560px;
+}
+
+.prices-section {
+    width: min(1180px, calc(100% - 40px));
+    margin: 0 auto;
+    padding: 40px 0 110px;
+}
+
+.price-warning {
+    margin-bottom: 18px;
+    padding: 15px;
+    background: #fff7df;
+    color: #684e05;
+    border: 1px solid #f0db95;
+    border-radius: 11px;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    box-shadow: var(--shadow);
+}
+
+table {
+    width: 100%;
+    min-width: 760px;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+th {
+    background: #f1f6f2;
+    color: var(--muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+}
+
+.price-up {
+    color: var(--primary);
+    font-weight: 750;
+}
+
+.price-down {
+    color: var(--danger);
+    font-weight: 750;
+}
+
+@media (max-width: 600px) {
+    .prices-hero {
+        padding: 42px 15px;
+    }
+
+    .prices-section {
+        width: calc(100% - 28px);
+    }
+}

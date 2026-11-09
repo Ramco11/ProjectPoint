@@ -1,0 +1,1281 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1"
+>
+
+<title>FarmSetu | Sell Product</title>
+
+<link
+  rel="stylesheet"
+  href="../css/global.css"
+>
+
+<link
+  rel="stylesheet"
+  href="marketplace.css"
+>
+
+<style>
+
+.sell-intro {
+  padding: 15px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #eaf8ee,
+      #f7fbf8
+    );
+
+  border: 1px solid #dbe9df;
+  border-radius: 15px;
+
+  margin-bottom: 18px;
+}
+
+.sell-intro h2 {
+  margin: 0 0 5px;
+
+  font-size: 18px;
+}
+
+.sell-intro p {
+  margin: 0;
+
+  color: #637067;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+}
+
+.form-section {
+  margin-bottom: 23px;
+}
+
+.form-section-title {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  margin-bottom: 12px;
+}
+
+.form-section-title span {
+  width: 31px;
+  height: 31px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 9px;
+
+  background: #e7f6eb;
+}
+
+.form-section-title h3 {
+  margin: 0;
+
+  font-size: 15px;
+}
+
+.required {
+  color: #d43e3e;
+}
+
+.form-grid {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 10px;
+}
+
+.sell-field {
+  margin-bottom: 13px;
+}
+
+.sell-field label {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: #435047;
+
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sell-field input,
+.sell-field select,
+.sell-field textarea {
+
+  width: 100%;
+
+  border:
+    1px solid
+    #d7e2da;
+
+  border-radius: 11px;
+
+  padding: 12px;
+
+  background: white;
+
+  outline: none;
+}
+
+.sell-field textarea {
+  min-height: 105px;
+
+  resize: vertical;
+}
+
+.sell-field input:focus,
+.sell-field select:focus,
+.sell-field textarea:focus {
+
+  border-color: #087a36;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(8,122,54,.10);
+}
+
+.organic-options {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 9px;
+}
+
+.organic-option input {
+  display: none;
+}
+
+.organic-option label {
+
+  display: block;
+
+  padding: 13px;
+
+  text-align: center;
+
+  border:
+    1px solid
+    #d9e4dc;
+
+  border-radius: 11px;
+
+  cursor: pointer;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.organic-option
+input:checked + label {
+
+  background: #e7f7eb;
+
+  color: #087a36;
+
+  border-color: #087a36;
+}
+
+.photo-uploader {
+  border:
+    2px dashed
+    #b4c5b9;
+
+  border-radius: 14px;
+
+  padding: 23px;
+
+  text-align: center;
+
+  background: #fafcfb;
+
+  cursor: pointer;
+}
+
+.photo-uploader strong {
+  display: block;
+
+  margin-top: 7px;
+}
+
+.photo-uploader small {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #77827a;
+}
+
+.photo-previews {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3,1fr);
+
+  gap: 7px;
+
+  margin-top: 10px;
+}
+
+.photo-preview-container {
+  position: relative;
+
+  aspect-ratio: 1;
+
+  border-radius: 10px;
+
+  overflow: hidden;
+
+  background: #edf4ef;
+}
+
+.photo-preview-container img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+.remove-photo {
+  position: absolute;
+
+  top: 4px;
+  right: 4px;
+
+  width: 25px;
+  height: 25px;
+
+  border: 0;
+  border-radius: 50%;
+
+  background:
+    rgba(0,0,0,.65);
+
+  color: white;
+
+  cursor: pointer;
+}
+
+.listing-summary {
+  padding: 13px;
+
+  background: #f5faf6;
+
+  border: 1px solid #dfe9e2;
+  border-radius: 12px;
+
+  margin-bottom: 17px;
+
+  font-size: 12px;
+
+  color: #5c6960;
+}
+
+.submit-product {
+  width: 100%;
+
+  border: 0;
+
+  border-radius: 12px;
+
+  padding: 14px;
+
+  background: #087a36;
+
+  color: white;
+
+  font-weight: 900;
+
+  cursor: pointer;
+}
+
+.submit-product:hover {
+  background: #06692e;
+}
+
+.form-message {
+
+  padding: 10px 12px;
+
+  margin-bottom: 12px;
+
+  border-radius: 9px;
+
+  display: none;
+
+  font-size: 12px;
+}
+
+.form-message.error {
+  display: block;
+
+  color: #9f2929;
+
+  background: #fff0f0;
+
+  border: 1px solid #ffd1d1;
+}
+
+.form-message.success {
+  display: block;
+
+  color: #087a36;
+
+  background: #e8f7ed;
+
+  border: 1px solid #c8e9d2;
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+<main class="phone">
+
+<header class="topbar">
+
+<a
+  class="back"
+  href="marketplace.html"
+>
+‹
+</a>
+
+<h1>Sell Product</h1>
+
+</header>
+
+
+<section class="page">
+
+<div class="sell-intro">
+
+<h2>
+List your farm product 🌾
+</h2>
+
+<p>
+Add clear information so buyers
+can understand the product,
+quantity, price and location.
+</p>
+
+</div>
+
+
+<form
+  id="sellForm"
+  novalidate
+>
+
+<div
+  id="formMessage"
+  class="form-message"
+></div>
+
+
+<section class="form-section">
+
+<div class="form-section-title">
+
+<span>🌾</span>
+
+<h3>
+Product Information
+</h3>
+
+</div>
+
+
+<div class="sell-field">
+
+<label for="productName">
+Product Name
+<span class="required">*</span>
+</label>
+
+<input
+  id="productName"
+  name="productName"
+  type="text"
+  maxlength="70"
+  placeholder="Example: Organic Tomatoes"
+  required
+>
+
+</div>
+
+
+<div class="sell-field">
+
+<label for="category">
+Category
+<span class="required">*</span>
+</label>
+
+<select
+  id="category"
+  name="category"
+  required
+>
+
+<option value="">
+Select category
+</option>
+
+<option>
+Vegetables
+</option>
+
+<option>
+Fruits
+</option>
+
+<option>
+Grains
+</option>
+
+<option>
+Seeds
+</option>
+
+<option>
+Pulses
+</option>
+
+<option>
+Spices
+</option>
+
+<option>
+Other
+</option>
+
+</select>
+
+</div>
+
+
+<div class="sell-field">
+
+<label for="description">
+Product Description
+</label>
+
+<textarea
+  id="description"
+  name="description"
+  maxlength="500"
+  placeholder="Describe quality, harvest, farming method and other useful information..."
+></textarea>
+
+</div>
+
+</section>
+
+
+<section class="form-section">
+
+<div class="form-section-title">
+
+<span>₹</span>
+
+<h3>
+Price & Quantity
+</h3>
+
+</div>
+
+
+<div class="form-grid">
+
+<div class="sell-field">
+
+<label for="price">
+Price
+<span class="required">*</span>
+</label>
+
+<input
+  id="price"
+  name="price"
+  type="number"
+  min="1"
+  step="0.01"
+  placeholder="30"
+  required
+>
+
+</div>
+
+
+<div class="sell-field">
+
+<label for="unit">
+Price Unit
+<span class="required">*</span>
+</label>
+
+<select
+  id="unit"
+  name="unit"
+>
+
+<option value="kg">
+Per kg
+</option>
+
+<option value="quintal">
+Per quintal
+</option>
+
+<option value="ton">
+Per ton
+</option>
+
+<option value="piece">
+Per piece
+</option>
+
+<option value="box">
+Per box
+</option>
+
+</select>
+
+</div>
+
+</div>
+
+
+<div class="form-grid">
+
+<div class="sell-field">
+
+<label for="quantity">
+Available Quantity
+<span class="required">*</span>
+</label>
+
+<input
+  id="quantity"
+  name="quantity"
+  type="number"
+  min="1"
+  placeholder="500"
+  required
+>
+
+</div>
+
+
+<div class="sell-field">
+
+<label for="quantityUnit">
+Quantity Unit
+</label>
+
+<select
+  id="quantityUnit"
+  name="quantityUnit"
+>
+
+<option value="kg">
+kg
+</option>
+
+<option value="quintal">
+quintal
+</option>
+
+<option value="ton">
+ton
+</option>
+
+<option value="piece">
+pieces
+</option>
+
+<option value="box">
+boxes
+</option>
+
+</select>
+
+</div>
+
+</div>
+
+
+<div class="sell-field">
+
+<label for="minimumOrder">
+Minimum Order Quantity
+</label>
+
+<input
+  id="minimumOrder"
+  name="minimumOrder"
+  type="number"
+  min="1"
+  placeholder="Example: 10"
+>
+
+</div>
+
+</section>
+
+
+<section class="form-section">
+
+<div class="form-section-title">
+
+<span>🌱</span>
+
+<h3>
+Farming Method
+</h3>
+
+</div>
+
+
+<div class="organic-options">
+
+<div class="organic-option">
+
+<input
+  id="organicYes"
+  type="radio"
+  name="farmingMethod"
+  value="Organic"
+>
+
+<label for="organicYes">
+🌿 Organic
+</label>
+
+</div>
+
+
+<div class="organic-option">
+
+<input
+  id="organicNo"
+  type="radio"
+  name="farmingMethod"
+  value="Conventional"
+  checked
+>
+
+<label for="organicNo">
+🌾 Conventional
+</label>
+
+</div>
+
+</div>
+
+</section>
+
+
+<section class="form-section">
+
+<div class="form-section-title">
+
+<span>📍</span>
+
+<h3>
+Location & Delivery
+</h3>
+
+</div>
+
+
+<div class="sell-field">
+
+<label for="location">
+Location
+<span class="required">*</span>
+</label>
+
+<input
+  id="location"
+  name="location"
+  type="text"
+  placeholder="Rajkot, Gujarat"
+  required
+>
+
+</div>
+
+
+<div class="sell-field">
+
+<label for="delivery">
+Delivery Option
+</label>
+
+<select
+  id="delivery"
+  name="delivery"
+>
+
+<option>
+Pickup Only
+</option>
+
+<option>
+Delivery Available
+</option>
+
+<option>
+Pickup & Delivery
+</option>
+
+</select>
+
+</div>
+
+</section>
+
+
+<section class="form-section">
+
+<div class="form-section-title">
+
+<span>📷</span>
+
+<h3>
+Product Photos
+</h3>
+
+</div>
+
+
+<label
+  class="photo-uploader"
+  for="productPhotos"
+>
+
+<div style="font-size:34px">
+📷
+</div>
+
+<strong>
+Add Product Photos
+</strong>
+
+<small>
+Upload up to 5 clear images
+</small>
+
+</label>
+
+
+<input
+  id="productPhotos"
+  name="productPhotos"
+  type="file"
+  accept="image/*"
+  multiple
+  hidden
+>
+
+
+<div
+  id="photoPreviews"
+  class="photo-previews"
+></div>
+
+</section>
+
+
+<div class="listing-summary">
+
+<strong>Before publishing:</strong>
+
+Make sure the product name,
+price, quantity and location
+are accurate.
+
+The production version can
+send this listing to Supabase
+after seller authentication.
+
+</div>
+
+
+<button
+  class="submit-product"
+  type="submit"
+>
+Publish Product
+</button>
+
+</form>
+
+
+</section>
+
+
+<nav class="bottom-nav">
+
+<a href="../home/home.html">
+
+<span>⌂</span>
+
+Home
+
+</a>
+
+
+<a href="marketplace.html">
+
+<span>▱</span>
+
+Market
+
+</a>
+
+
+<a
+  class="active"
+  href="sell.html"
+>
+
+<span>＋</span>
+
+Sell
+
+</a>
+
+
+<a href="../training/training.html">
+
+<span>♧</span>
+
+Learn
+
+</a>
+
+
+<a href="../profile/profile.html">
+
+<span>♙</span>
+
+Profile
+
+</a>
+
+</nav>
+
+</main>
+
+
+<script src="../js/app.js"></script>
+
+<script>
+
+document.addEventListener(
+  "DOMContentLoaded",
+  function () {
+
+    const form =
+      document.getElementById(
+        "sellForm"
+      );
+
+    const photoInput =
+      document.getElementById(
+        "productPhotos"
+      );
+
+    const previews =
+      document.getElementById(
+        "photoPreviews"
+      );
+
+    const formMessage =
+      document.getElementById(
+        "formMessage"
+      );
+
+    let selectedPhotos = [];
+
+
+    photoInput.addEventListener(
+      "change",
+      function () {
+
+        const newFiles =
+          Array.from(
+            photoInput.files
+          );
+
+
+        newFiles.forEach(
+          function (file) {
+
+            if (
+              !file.type.startsWith(
+                "image/"
+              )
+            ) {
+              return;
+            }
+
+
+            if (
+              selectedPhotos.length
+              >= 5
+            ) {
+              return;
+            }
+
+
+            selectedPhotos.push(
+              file
+            );
+
+          }
+        );
+
+
+        renderPhotos();
+
+        photoInput.value = "";
+
+      }
+    );
+
+
+    function renderPhotos() {
+
+      previews.innerHTML = "";
+
+
+      selectedPhotos.forEach(
+        function (file, index) {
+
+          const reader =
+            new FileReader();
+
+
+          reader.onload =
+            function (event) {
+
+              const container =
+                document.createElement(
+                  "div"
+                );
+
+
+              container.className =
+                "photo-preview-container";
+
+
+              const image =
+                document.createElement(
+                  "img"
+                );
+
+
+              image.src =
+                event.target.result;
+
+
+              image.alt =
+                "Product preview";
+
+
+              const removeButton =
+                document.createElement(
+                  "button"
+                );
+
+
+              removeButton.type =
+                "button";
+
+
+              removeButton.className =
+                "remove-photo";
+
+
+              removeButton.textContent =
+                "×";
+
+
+              removeButton.addEventListener(
+                "click",
+                function () {
+
+                  selectedPhotos.splice(
+                    index,
+                    1
+                  );
+
+                  renderPhotos();
+
+                }
+              );
+
+
+              container.appendChild(
+                image
+              );
+
+
+              container.appendChild(
+                removeButton
+              );
+
+
+              previews.appendChild(
+                container
+              );
+
+            };
+
+
+          reader.readAsDataURL(
+            file
+          );
+
+        }
+      );
+
+    }
+
+
+    form.addEventListener(
+      "submit",
+      function (event) {
+
+        event.preventDefault();
+
+
+        formMessage.className =
+          "form-message";
+
+
+        formMessage.textContent = "";
+
+
+        const productName =
+          document.getElementById(
+            "productName"
+          ).value.trim();
+
+
+        const category =
+          document.getElementById(
+            "category"
+          ).value;
+
+
+        const price =
+          Number(
+            document.getElementById(
+              "price"
+            ).value
+          );
+
+
+        const quantity =
+          Number(
+            document.getElementById(
+              "quantity"
+            ).value
+          );
+
+
+        const location =
+          document.getElementById(
+            "location"
+          ).value.trim();
+
+
+        if (!productName) {
+
+          showError(
+            "Please enter the product name."
+          );
+
+          return;
+        }
+
+
+        if (!category) {
+
+          showError(
+            "Please select a product category."
+          );
+
+          return;
+        }
+
+
+        if (
+          !Number.isFinite(price)
+          ||
+          price <= 0
+        ) {
+
+          showError(
+            "Please enter a valid price."
+          );
+
+          return;
+        }
+
+
+        if (
+          !Number.isFinite(quantity)
+          ||
+          quantity <= 0
+        ) {
+
+          showError(
+            "Please enter the available quantity."
+          );
+
+          return;
+        }
+
+
+        if (!location) {
+
+          showError(
+            "Please enter the farm or product location."
+          );
+
+          return;
+        }
+
+
+        const productData = {
+
+          productName:
+            productName,
+
+          category:
+            category,
+
+          price:
+            price,
+
+          unit:
+            document.getElementById(
+              "unit"
+            ).value,
+
+          quantity:
+            quantity,
+
+          quantityUnit:
+            document.getElementById(
+              "quantityUnit"
+            ).value,
+
+          minimumOrder:
+            document.getElementById(
+              "minimumOrder"
+            ).value,
+
+          description:
+            document.getElementById(
+              "description"
+            ).value.trim(),
+
+          farmingMethod:
+            document.querySelector(
+              'input[name="farmingMethod"]:checked'
+            ).value,
+
+          location:
+            location,
+
+          delivery:
+            document.getElementById(
+              "delivery"
+            ).value,
+
+          photos:
+            selectedPhotos.length
+
+        };
+
+
+        console.log(
+          "FarmSetu listing:",
+          productData
+        );
+
+
+        formMessage.className =
+          "form-message success";
+
+
+        formMessage.textContent =
+          "Product validated successfully. The frontend listing is ready. Permanent publishing will be connected to the FarmSetu database in the backend phase.";
+
+
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth"
+        });
+
+      }
+    );
+
+
+    function showError(
+      message
+    ) {
+
+      formMessage.className =
+        "form-message error";
+
+
+      formMessage.textContent =
+        message;
+
+
+      formMessage.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+
+    }
+
+  }
+);
+
+</script>
+
+
+</body>
+</html>
