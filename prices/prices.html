@@ -1,103 +1,58 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>Market Prices | FarmSetu</title>
-
-    <link rel="stylesheet" href="../css/global.css">
-    <link rel="stylesheet" href="prices.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FarmSetu | Market Prices</title>
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="prices.css">
 </head>
-
 <body>
-    <header class="top-header">
-        <a class="brand" href="../index.html">
-            <span class="brand-logo">FS</span>
 
-            <span>
-                <strong>FarmSetu</strong>
-                <small>Market Prices</small>
-            </span>
-        </a>
+<main class="phone">
 
-        <a class="prices-home" href="../index.html">← Home</a>
-    </header>
+  <header class="topbar">
+    <a class="back" href="../home/home.html" aria-label="Back to home">‹</a>
+    <h1>Market Prices</h1>
+  </header>
 
-    <main>
-        <section class="prices-hero">
-            <span class="eyebrow">Price information</span>
-            <h1>Crop Market Prices</h1>
+  <section class="page">
 
-            <p>
-                Sample prices for the frontend demonstration.
-                Live mandi data can be connected later.
-            </p>
+    <input id="priceSearch" class="search" type="search" placeholder="Search crop or market" autocomplete="off">
 
-            <input
-                id="priceSearch"
-                type="search"
-                placeholder="Search crop or market"
-            >
-        </section>
+    <div id="trendChips" class="chips">
+      <button class="chip active" type="button" data-trend="all">All</button>
+      <button class="chip" type="button" data-trend="up">▲ Rising</button>
+      <button class="chip" type="button" data-trend="down">▼ Falling</button>
+    </div>
 
-        <section class="prices-section">
-            <div class="price-warning">
-                <strong>Demonstration data:</strong>
-                Verify the current rate with the relevant mandi,
-                buyer or official market source before selling.
-            </div>
+    <div class="price-warning">
+      <strong>Demonstration data.</strong> Prices are in ₹ per quintal (100 kg).
+      Verify the current rate with the mandi, buyer or an official market
+      source before selling. Live data can be connected in the backend phase.
+    </div>
 
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Crop</th>
-                            <th>Market</th>
-                            <th>Minimum</th>
-                            <th>Average</th>
-                            <th>Maximum</th>
-                            <th>Trend</th>
-                        </tr>
-                    </thead>
+    <div id="priceList" class="price-list"></div>
 
-                    <tbody id="priceTableBody"></tbody>
-                </table>
-            </div>
-        </section>
-    </main>
+    <div id="noPrices" class="empty-box" hidden>
+      <div class="big">📈</div>
+      <h3>No prices found</h3>
+      <p>Try a different crop or market name.</p>
+    </div>
 
-    <nav class="bottom-navigation">
-        <a href="../index.html">
-            <span>🏠</span>
-            Home
-        </a>
+  </section>
 
-        <a href="../marketplace/marketplace.html">
-            <span>🛒</span>
-            Market
-        </a>
+  <nav class="bottom-nav" aria-label="FarmSetu navigation">
+    <a href="../home/home.html"><span>⌂</span>Home</a>
+    <a href="../marketplace/marketplace.html"><span>▱</span>Market</a>
+    <a class="sell-nav" href="../marketplace/sell.html"><span>＋</span>Sell</a>
+    <a href="../training/training.html"><span>♧</span>Learn</a>
+    <a href="../profile/profile.html"><span>♙</span>Profile</a>
+  </nav>
 
-        <a href="../equipment/equipment.html">
-            <span>🚜</span>
-            Equipment
-        </a>
+</main>
 
-        <a href="../training/training.html">
-            <span>🎓</span>
-            Learn
-        </a>
-
-        <a href="../orders/orders.html">
-            <span>📦</span>
-            Orders
-        </a>
-    </nav>
-
-    <script src="prices.js"></script>
+<script src="../js/app.js"></script>
+<script src="prices.js"></script>
 </body>
 </html>

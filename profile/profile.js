@@ -334,6 +334,94 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   /* ---------------------------------------
+     SAVED STATE (browser storage)
+     Posts, likes, comments, follow state
+     survive a page refresh. Replace with
+     Supabase during the backend phase.
+  --------------------------------------- */
+
+  const STORAGE_KEY = "farmsetu-profile-state";
+
+  function saveProfileState() {
+
+    const payload = {
+      posts: farmerPosts,
+      isFollowing: isFollowing,
+      followers: farmer.followers,
+      postCount: farmer.posts
+    };
+
+    try {
+
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(payload)
+      );
+
+    } catch (error) {
+
+      /* Storage may be full (large photos) or blocked.
+         Retry without uploaded photo data. */
+
+      try {
+
+        payload.posts =
+          farmerPosts.map(post =>
+            post.mediaType === "uploaded-image"
+              ? { ...post, media: "🌾", mediaType: "image" }
+              : post
+          );
+
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(payload)
+        );
+
+      } catch (secondError) {
+        /* App keeps working without saving. */
+      }
+
+    }
+
+  }
+
+  (function restoreProfileState() {
+
+    try {
+
+      const saved =
+        JSON.parse(
+          localStorage.getItem(STORAGE_KEY)
+        );
+
+      if (!saved || !Array.isArray(saved.posts)) {
+        return;
+      }
+
+      farmerPosts.splice(
+        0,
+        farmerPosts.length,
+        ...saved.posts
+      );
+
+      isFollowing = Boolean(saved.isFollowing);
+
+      if (Number.isFinite(saved.followers)) {
+        farmer.followers = saved.followers;
+      }
+
+      if (Number.isFinite(saved.postCount)) {
+        farmer.posts = saved.postCount;
+      }
+
+    } catch (error) {
+      /* Ignore corrupted saved data. */
+    }
+
+  })();
+
+
+  /* ---------------------------------------
      ELEMENTS
   --------------------------------------- */
 
@@ -456,6 +544,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         updateFollowerCount();
 
+        saveProfileState();
+
 
         showToast(
           isFollowing
@@ -477,9 +567,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     followerCount.textContent =
-      formatSocialNumber(
-        farmer.followers
-      );
+      farmer.followers < 10000
+        ? farmer.followers.toLocaleString("en-IN")
+        : formatSocialNumber(
+            farmer.followers
+          );
 
   }
 
@@ -2028,6 +2120,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    saveProfileState();
+
 
     let posts =
       [...farmerPosts];
@@ -3060,6 +3154,28 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ---------------------------------------
      START PROFILE
   --------------------------------------- */
+
+  if (followButton) {
+
+    followButton.dataset.following =
+      String(isFollowing);
+
+    followButton.textContent =
+      isFollowing
+        ? "Following"
+        : "Follow";
+
+  }
+
+  const postCountElement =
+    document.getElementById("postCount");
+
+  if (postCountElement) {
+
+    postCountElement.textContent =
+      String(farmer.posts);
+
+  }
 
   updateFollowerCount();
 

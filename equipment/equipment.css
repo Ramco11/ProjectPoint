@@ -19,7 +19,7 @@
 
 .equipment-app {
   background: #ffffff;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .equipment-page {

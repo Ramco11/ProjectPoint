@@ -1,173 +1,139 @@
 "use strict";
 
-const productModal = document.getElementById("productModal");
-const assistantModal = document.getElementById("assistantModal");
+/*
+ * FarmSetu shared helpers.
+ * Loaded by every page BEFORE the page's own script.
+ * Data lives in localStorage for this frontend demo; swap the
+ * functions below for Supabase calls in the backend phase.
+ */
 
-const sellProductButton = document.getElementById("sellProductButton");
-const mobileSellButton = document.getElementById("mobileSellButton");
-const closeProductModal = document.getElementById("closeProductModal");
+window.FarmSetu = (function () {
 
-const assistantButton = document.getElementById("assistantButton");
-const closeAssistantModal = document.getElementById("closeAssistantModal");
+  /* ---------- Utilities ---------- */
 
-const productForm = document.getElementById("productForm");
-const productFormMessage = document.getElementById("productFormMessage");
-const assistantResponse = document.getElementById("assistantResponse");
-const languageButton = document.getElementById("languageButton");
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
 
-function openModal(modal) {
-    if (!modal) {
-        return;
-    }
+  function formatCurrency(amount) {
+    const n = Number.isFinite(Number(amount)) ? Number(amount) : 0;
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency", currency: "INR", maximumFractionDigits: 0
+    }).format(n);
+  }
 
-    modal.classList.add("show");
-    document.body.classList.add("modal-open");
-}
-
-function closeModal(modal) {
-    if (!modal) {
-        return;
-    }
-
-    modal.classList.remove("show");
-
-    const openModalExists = document.querySelector(".modal.show");
-
-    if (!openModalExists) {
-        document.body.classList.remove("modal-open");
-    }
-}
-
-sellProductButton?.addEventListener("click", function () {
-    openModal(productModal);
-});
-
-mobileSellButton?.addEventListener("click", function () {
-    openModal(productModal);
-});
-
-closeProductModal?.addEventListener("click", function () {
-    closeModal(productModal);
-});
-
-assistantButton?.addEventListener("click", function () {
-    openModal(assistantModal);
-});
-
-closeAssistantModal?.addEventListener("click", function () {
-    closeModal(assistantModal);
-});
-
-document.querySelectorAll(".modal").forEach(function (modal) {
-    modal.addEventListener("click", function (event) {
-        if (event.target === modal) {
-            closeModal(modal);
-        }
-    });
-});
-
-document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape") {
-        closeModal(productModal);
-        closeModal(assistantModal);
-    }
-});
-
-function getSavedProducts() {
-    const savedProducts = localStorage.getItem("farmsetu-products");
-
-    if (!savedProducts) {
-        return [];
-    }
-
+  function readJson(key, fallback) {
     try {
-        return JSON.parse(savedProducts);
+      const value = JSON.parse(localStorage.getItem(key));
+      return value === null || value === undefined ? fallback : value;
     } catch (error) {
-        return [];
+      return fallback;
     }
-}
+  }
 
-productForm?.addEventListener("submit", function (event) {
-    event.preventDefault();
-
-    const product = {
-        id: Date.now(),
-        name: document.getElementById("productName").value.trim(),
-        category: document.getElementById("productCategory").value,
-        price: Number(document.getElementById("productPrice").value),
-        quantity: Number(
-            document.getElementById("productQuantity").value
-        ),
-        location: document
-            .getElementById("productLocation")
-            .value
-            .trim(),
-        seller: document.getElementById("sellerName").value.trim(),
-        createdAt: new Date().toISOString()
-    };
-
-    if (
-        !product.name ||
-        !product.category ||
-        product.price <= 0 ||
-        product.quantity <= 0 ||
-        !product.location ||
-        !product.seller
-    ) {
-        productFormMessage.textContent =
-            "Please complete all product details correctly.";
-
-        return;
+  function writeJson(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (error) {
+      return false; // storage full or blocked — app still works
     }
+  }
 
-    const products = getSavedProducts();
+  let toastTimer;
+  function showToast(message) {
+    let toast = document.getElementById("toast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "toast";
+      toast.className = "toast";
+      toast.setAttribute("role", "status");
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+      toast.classList.remove("show");
+    }, 2400);
+  }
 
-    products.unshift(product);
+  /* ---------- Products ---------- */
 
-    localStorage.setItem(
-        "farmsetu-products",
-        JSON.stringify(products)
-    );
+  const defaultProducts = [
+    { id: 1, name: "Organic Tomatoes", category: "Vegetables", price: 30, unit: "kg", quantity: 500, minimumOrder: 10, organic: true, location: "Rajkot, Gujarat", seller: "Rameshbhai Patel", icon: "🍅", description: "Fresh organic tomatoes grown locally using sustainable farming methods. Harvested at the right stage for freshness and quality. Available directly from the farmer." },
+    { id: 2, name: "Fresh Onions", category: "Vegetables", price: 22, unit: "kg", quantity: 900, minimumOrder: 25, organic: false, location: "Jamnagar, Gujarat", seller: "Rameshbhai Patel", icon: "🧅", description: "Fresh farm onions supplied directly by a local farmer. Suitable for household, retail and bulk purchasing." },
+    { id: 3, name: "Organic Wheat", category: "Grains", price: 28, unit: "kg", quantity: 1200, minimumOrder: 50, organic: true, location: "Surendranagar, Gujarat", seller: "Rameshbhai Patel", icon: "🌾", description: "Farm-grown wheat available for direct purchase. The listing is marked by the seller as organically grown." },
+    { id: 4, name: "Fresh Potatoes", category: "Vegetables", price: 28, unit: "kg", quantity: 500, minimumOrder: 20, organic: false, location: "Ahmedabad, Gujarat", seller: "Patel Family Farm", icon: "🥔", description: "Clean, firm potatoes suitable for retail and bulk orders." },
+    { id: 5, name: "Premium Wheat", category: "Grains", price: 36, unit: "kg", quantity: 1200, minimumOrder: 100, organic: false, location: "Indore, Madhya Pradesh", seller: "Shakti Agriculture", icon: "🌾", description: "Premium graded wheat, cleaned and bagged." },
+    { id: 6, name: "Groundnut Seeds", category: "Seeds", price: 95, unit: "kg", quantity: 220, minimumOrder: 5, organic: false, location: "Junagadh, Gujarat", seller: "Kisan Seeds", icon: "🥜", description: "Seed-grade groundnut with good germination. Confirm variety and treatment with the seller." },
+    { id: 7, name: "Fresh Mangoes", category: "Fruits", price: 110, unit: "kg", quantity: 350, minimumOrder: 5, organic: false, location: "Gir Somnath, Gujarat", seller: "Madhav Orchard", icon: "🥭", description: "Tree-ripened mangoes from a family orchard." },
+    { id: 8, name: "Organic Spinach", category: "Vegetables", price: 32, unit: "kg", quantity: 90, minimumOrder: 2, organic: true, location: "Surat, Gujarat", seller: "Natural Harvest", icon: "🥬", description: "Freshly cut organic spinach, best bought within two days." }
+  ];
 
-    productFormMessage.textContent =
-        "Product published successfully.";
+  const categoryIcons = {
+    Vegetables: "🥕", Fruits: "🥭", Grains: "🌾", Seeds: "🌱",
+    Pulses: "🫘", Spices: "🌶️", Organic: "🥬", Other: "🧺"
+  };
 
-    productForm.reset();
+  function getSavedProducts() {
+    const list = readJson("farmsetu-products", []);
+    return Array.isArray(list) ? list : [];
+  }
 
-    window.setTimeout(function () {
-        window.location.href = "marketplace/marketplace.html";
-    }, 800);
-});
+  function getAllProducts() {
+    return getSavedProducts().concat(defaultProducts);
+  }
 
-const assistantAnswers = {
-    crop:
-        "Record the crop name, planting date, soil condition and recent symptoms. Check leaves, stems and roots separately before selecting any treatment.",
+  function getProduct(id) {
+    return getAllProducts().find(function (p) { return String(p.id) === String(id); }) || null;
+  }
 
-    pest:
-        "Remove heavily affected leaves, keep the field clean and identify the pest before applying a treatment. Use traps or approved biological controls where suitable.",
+  function addProduct(product) {
+    const list = getSavedProducts();
+    list.unshift(product);
+    return writeJson("farmsetu-products", list);
+  }
 
-    water:
-        "Check soil moisture below the surface before irrigation. Water early in the morning and avoid keeping roots continuously saturated unless the crop requires it.",
+  /* ---------- Orders ---------- */
 
-    organic:
-        "Start with healthy soil, mature compost, crop rotation and biological pest controls. Do not apply an unknown mixture directly to the entire crop."
-};
+  function getOrders() {
+    const list = readJson("farmsetu-orders", []);
+    return Array.isArray(list) ? list : [];
+  }
 
-document
-    .querySelectorAll(".assistant-options button")
-    .forEach(function (button) {
-        button.addEventListener("click", function () {
-            const topic = button.dataset.topic;
+  function saveOrders(orders) {
+    return writeJson("farmsetu-orders", orders);
+  }
 
-            assistantResponse.textContent =
-                assistantAnswers[topic] ??
-                "Select a valid farming topic.";
-        });
+  function createOrder(product, quantity) {
+    const qty = Math.max(1, Number(quantity) || 1);
+    const orders = getOrders();
+    orders.unshift({
+      id: Date.now(),
+      productName: product.name,
+      seller: product.seller,
+      unit: product.unit || "kg",
+      quantity: qty,
+      total: Number(product.price) * qty,
+      status: "Pending"
     });
+    saveOrders(orders);
+  }
 
-let currentLanguage = "EN";
+  return {
+    escapeHtml, formatCurrency, readJson, writeJson, showToast,
+    defaultProducts, categoryIcons,
+    getSavedProducts, getAllProducts, getProduct, addProduct,
+    getOrders, saveOrders, createOrder
+  };
 
-languageButton?.addEventListener("click", function () {
-    currentLanguage = currentLanguage === "EN" ? "हि" : "EN";
-    languageButton.textContent = currentLanguage;
-});
+})();
+
+/* Global shortcut used by several pages */
+window.showToast = window.FarmSetu.showToast;

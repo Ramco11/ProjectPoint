@@ -1,119 +1,67 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>Organic Farming Training | FarmSetu</title>
-
-    <link rel="stylesheet" href="../css/global.css">
-    <link rel="stylesheet" href="training.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FarmSetu | Organic Training</title>
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="training.css">
 </head>
-
 <body>
-    <header class="top-header">
-        <a class="brand" href="../index.html">
-            <span class="brand-logo">FS</span>
 
-            <span>
-                <strong>FarmSetu</strong>
-                <small>Organic Farming Academy</small>
-            </span>
-        </a>
+<main class="phone">
 
-        <a class="training-home" href="../index.html">← Home</a>
-    </header>
+  <header class="topbar">
+    <a class="back" href="../home/home.html" aria-label="Back to home">‹</a>
+    <h1>Organic Training</h1>
+  </header>
 
-    <main>
-        <section class="training-hero">
-            <span class="eyebrow">Learn and grow</span>
-            <h1>Organic Farming Academy</h1>
+  <section class="page">
 
-            <p>
-                Complete practical lessons and track your learning
-                progress on this device.
-            </p>
-
-            <div class="progress-card">
-                <div>
-                    <strong id="completedCount">0 of 6 lessons</strong>
-                    <span>completed</span>
-                </div>
-
-                <div class="progress-track">
-                    <div
-                        class="progress-fill"
-                        id="progressFill"
-                    ></div>
-                </div>
-            </div>
-        </section>
-
-        <section class="training-section">
-            <div class="course-grid" id="courseGrid"></div>
-        </section>
-    </main>
-
-    <div class="modal" id="lessonModal">
-        <div class="modal-card">
-            <div class="modal-header">
-                <div>
-                    <span class="eyebrow">Training lesson</span>
-                    <h2 id="lessonTitle">Lesson</h2>
-                </div>
-
-                <button
-                    class="close-button"
-                    id="closeLessonModal"
-                    type="button"
-                >
-                    ×
-                </button>
-            </div>
-
-            <div class="lesson-content" id="lessonContent"></div>
-
-            <button
-                class="button button-primary full-width"
-                id="completeLessonButton"
-                type="button"
-            >
-                Mark as Completed
-            </button>
-        </div>
+    <div class="learn-banner">
+      <div>
+        <span class="learn-label">ORGANIC FARMING</span>
+        <h2>Grow Better.<br>Farm Naturally.</h2>
+        <p>Short practical courses you can follow at your own pace.</p>
+      </div>
+      <div class="learn-icon">🌱</div>
     </div>
 
-    <nav class="bottom-navigation">
-        <a href="../index.html">
-            <span>🏠</span>
-            Home
-        </a>
+    <div class="stats-row">
+      <div><strong id="statCourses">0</strong><span>Courses</span></div>
+      <div><strong id="statLessons">0</strong><span>Lessons done</span></div>
+      <div><strong id="statComplete">0</strong><span>Completed</span></div>
+    </div>
 
-        <a href="../marketplace/marketplace.html">
-            <span>🛒</span>
-            Market
-        </a>
+    <input id="courseSearch" class="search" type="search" placeholder="Search courses..." autocomplete="off">
 
-        <a href="../equipment/equipment.html">
-            <span>🚜</span>
-            Equipment
-        </a>
+    <div id="levelChips" class="chips">
+      <button class="chip active" type="button" data-level="All">All</button>
+      <button class="chip" type="button" data-level="Beginner">Beginner</button>
+      <button class="chip" type="button" data-level="Intermediate">Intermediate</button>
+    </div>
 
-        <a class="active" href="training.html">
-            <span>🎓</span>
-            Learn
-        </a>
+    <div id="courseList" class="course-list"></div>
 
-        <a href="../orders/orders.html">
-            <span>📦</span>
-            Orders
-        </a>
-    </nav>
+    <div id="noCourses" class="empty-box" hidden>
+      <div class="big">📚</div>
+      <h3>No courses found</h3>
+      <p>Try a different search or level.</p>
+    </div>
 
-    <script src="training.js"></script>
+  </section>
+
+  <nav class="bottom-nav" aria-label="FarmSetu navigation">
+    <a href="../home/home.html"><span>⌂</span>Home</a>
+    <a href="../marketplace/marketplace.html"><span>▱</span>Market</a>
+    <a class="sell-nav" href="../marketplace/sell.html"><span>＋</span>Sell</a>
+    <a class="active" href="training.html"><span>♧</span>Learn</a>
+    <a href="../profile/profile.html"><span>♙</span>Profile</a>
+  </nav>
+
+</main>
+
+<script src="../js/app.js"></script>
+<script src="training.js"></script>
 </body>
 </html>

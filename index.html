@@ -1,396 +1,56 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <meta
-        name="description"
-        content="FarmSetu farmer marketplace and organic farming training application"
-    >
-
-    <title>FarmSetu | Farmer Marketplace</title>
-
-    <link rel="stylesheet" href="css/global.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="FarmSetu farmer marketplace, equipment, organic training and AI farm assistant">
+  <title>FarmSetu | Grow. Sell. Learn.</title>
+  <link rel="stylesheet" href="css/global.css">
+  <style>
+    .welcome-screen {
+      min-height: 100vh; padding: 40px 24px 30px;
+      display: flex; flex-direction: column; justify-content: space-between;
+      color: #fff; background: linear-gradient(160deg, #05622b, #14944a);
+    }
+    .welcome-logo {
+      width: 64px; height: 64px; display: grid; place-items: center;
+      border-radius: 18px; background: rgba(255,255,255,.18);
+      font-size: 26px; font-weight: 900;
+    }
+    .welcome-screen h1 { margin: 22px 0 10px; font-size: 36px; line-height: 1.1; }
+    .welcome-screen p { margin: 0; color: #dff3e5; font-size: 14px; line-height: 1.6; }
+    .welcome-list { margin: 28px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+    .welcome-list li { padding: 12px 14px; border-radius: 13px; background: rgba(255,255,255,.12); font-size: 13px; }
+    .welcome-actions { display: grid; gap: 10px; margin-top: 30px; }
+    .welcome-actions .btn { background: #fff; color: var(--primary-dark); border-color: #fff; }
+    .welcome-actions .btn.secondary { background: transparent; color: #fff; border-color: rgba(255,255,255,.55); }
+  </style>
 </head>
-
 <body>
 
-    <header class="top-header">
-        <a class="brand" href="index.html">
-            <span class="brand-logo">FS</span>
+<main class="phone">
+  <section class="welcome-screen">
 
-            <span>
-                <strong>FarmSetu</strong>
-                <small>Grow. Sell. Learn.</small>
-            </span>
-        </a>
+    <div>
+      <div class="welcome-logo">FS</div>
+      <h1>FarmSetu</h1>
+      <p>Grow. Sell. Learn. A farmer marketplace with equipment rental, organic training, market prices and an AI farm assistant.</p>
 
-        <button
-            class="language-button"
-            id="languageButton"
-            type="button"
-        >
-            EN
-        </button>
-    </header>
-
-    <main>
-        <section class="hero">
-            <div class="hero-content">
-                <span class="hero-label">
-                    Farmer Marketplace
-                </span>
-
-                <h1>
-                    Sell your crops and grow your farming business
-                </h1>
-
-                <p>
-                    Buy and sell agricultural products, rent equipment,
-                    check market prices and learn organic farming.
-                </p>
-
-                <div class="hero-actions">
-                    <a
-                        class="button button-primary"
-                        href="marketplace/marketplace.html"
-                    >
-                        Explore Market
-                    </a>
-
-                    <button
-                        class="button button-secondary"
-                        id="sellProductButton"
-                        type="button"
-                    >
-                        Sell a Product
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <section class="section">
-            <div class="section-heading">
-                <div>
-                    <span class="eyebrow">Farm services</span>
-                    <h2>What would you like to do?</h2>
-                </div>
-            </div>
-
-            <div class="feature-grid">
-
-                <a
-                    class="feature-card"
-                    href="marketplace/marketplace.html"
-                >
-                    <span class="feature-icon green">🌾</span>
-                    <h3>Marketplace</h3>
-                    <p>
-                        Buy and sell vegetables, fruits, grains,
-                        seeds and organic products.
-                    </p>
-                    <span class="card-link">Open marketplace →</span>
-                </a>
-
-                <a
-                    class="feature-card"
-                    href="equipment/equipment.html"
-                >
-                    <span class="feature-icon orange">🚜</span>
-                    <h3>Equipment</h3>
-                    <p>
-                        Buy, sell or rent tractors, sprayers,
-                        tillers and other farm machines.
-                    </p>
-                    <span class="card-link">Browse equipment →</span>
-                </a>
-
-                <a
-                    class="feature-card"
-                    href="training/training.html"
-                >
-                    <span class="feature-icon blue">🌱</span>
-                    <h3>Organic Training</h3>
-                    <p>
-                        Learn composting, natural pest control,
-                        crop rotation and soil management.
-                    </p>
-                    <span class="card-link">Start learning →</span>
-                </a>
-
-                <a
-                    class="feature-card"
-                    href="prices/prices.html"
-                >
-                    <span class="feature-icon purple">📈</span>
-                    <h3>Market Prices</h3>
-                    <p>
-                        Compare sample crop prices before
-                        negotiating with a buyer.
-                    </p>
-                    <span class="card-link">Check prices →</span>
-                </a>
-
-                <a
-                    class="feature-card"
-                    href="orders/orders.html"
-                >
-                    <span class="feature-icon red">📦</span>
-                    <h3>My Orders</h3>
-                    <p>
-                        Review product orders and update
-                        delivery progress.
-                    </p>
-                    <span class="card-link">Manage orders →</span>
-                </a>
-
-                <button
-                    class="feature-card assistant-card"
-                    id="assistantButton"
-                    type="button"
-                >
-                    <span class="feature-icon teal">🤖</span>
-                    <h3>Farm Assistant</h3>
-                    <p>
-                        Get basic guidance for crops, irrigation
-                        and organic farming practices.
-                    </p>
-                    <span class="card-link">Ask assistant →</span>
-                </button>
-
-            </div>
-        </section>
-
-        <section class="section">
-            <div class="highlight-panel">
-                <div>
-                    <span class="eyebrow light">Organic farming</span>
-
-                    <h2>
-                        Learn practical organic farming step by step
-                    </h2>
-
-                    <p>
-                        Follow short courses on compost, soil preparation,
-                        water management and natural pest control.
-                    </p>
-                </div>
-
-                <a
-                    class="button button-light"
-                    href="training/training.html"
-                >
-                    View Training
-                </a>
-            </div>
-        </section>
-    </main>
-
-    <nav class="bottom-navigation" aria-label="Main navigation">
-        <a class="active" href="index.html">
-            <span>🏠</span>
-            Home
-        </a>
-
-        <a href="marketplace/marketplace.html">
-            <span>🛒</span>
-            Market
-        </a>
-
-        <button id="mobileSellButton" type="button">
-            <span class="sell-circle">＋</span>
-            Sell
-        </button>
-
-        <a href="training/training.html">
-            <span>🎓</span>
-            Learn
-        </a>
-
-        <a href="orders/orders.html">
-            <span>📦</span>
-            Orders
-        </a>
-    </nav>
-
-    <div
-        class="modal"
-        id="productModal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="productModalTitle"
-    >
-        <div class="modal-card">
-            <div class="modal-header">
-                <div>
-                    <span class="eyebrow">New listing</span>
-                    <h2 id="productModalTitle">Sell a product</h2>
-                </div>
-
-                <button
-                    class="close-button"
-                    id="closeProductModal"
-                    type="button"
-                    aria-label="Close"
-                >
-                    ×
-                </button>
-            </div>
-
-            <form id="productForm">
-                <div class="form-group">
-                    <label for="productName">Product name</label>
-                    <input
-                        id="productName"
-                        type="text"
-                        placeholder="Example: Organic tomatoes"
-                        required
-                    >
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="productCategory">Category</label>
-
-                        <select id="productCategory" required>
-                            <option value="">Select category</option>
-                            <option value="Vegetables">Vegetables</option>
-                            <option value="Fruits">Fruits</option>
-                            <option value="Grains">Grains</option>
-                            <option value="Seeds">Seeds</option>
-                            <option value="Organic">Organic</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="productPrice">Price per kg</label>
-
-                        <input
-                            id="productPrice"
-                            type="number"
-                            min="1"
-                            placeholder="40"
-                            required
-                        >
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="productQuantity">Quantity in kg</label>
-
-                        <input
-                            id="productQuantity"
-                            type="number"
-                            min="1"
-                            placeholder="100"
-                            required
-                        >
-                    </div>
-
-                    <div class="form-group">
-                        <label for="productLocation">Location</label>
-
-                        <input
-                            id="productLocation"
-                            type="text"
-                            placeholder="Rajkot, Gujarat"
-                            required
-                        >
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="sellerName">Seller name</label>
-
-                    <input
-                        id="sellerName"
-                        type="text"
-                        placeholder="Farmer or farm name"
-                        required
-                    >
-                </div>
-
-                <p class="form-message" id="productFormMessage"></p>
-
-                <button
-                    class="button button-primary full-width"
-                    type="submit"
-                >
-                    Publish Product
-                </button>
-            </form>
-        </div>
+      <ul class="welcome-list">
+        <li>🌾 Sell your crops directly to buyers</li>
+        <li>🚜 Buy, sell or rent farm equipment</li>
+        <li>📚 Learn practical organic farming</li>
+        <li>🤖 Get quick farming guidance</li>
+      </ul>
     </div>
 
-    <div
-        class="modal"
-        id="assistantModal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="assistantModalTitle"
-    >
-        <div class="modal-card">
-            <div class="modal-header">
-                <div>
-                    <span class="eyebrow">Farm support</span>
-                    <h2 id="assistantModalTitle">Farm Assistant</h2>
-                </div>
-
-                <button
-                    class="close-button"
-                    id="closeAssistantModal"
-                    type="button"
-                    aria-label="Close"
-                >
-                    ×
-                </button>
-            </div>
-
-            <div class="assistant-options">
-                <button type="button" data-topic="crop">
-                    🌾 My Crop
-                </button>
-
-                <button type="button" data-topic="pest">
-                    🐛 Pest Problem
-                </button>
-
-                <button type="button" data-topic="water">
-                    💧 Irrigation
-                </button>
-
-                <button type="button" data-topic="organic">
-                    🌱 Organic Treatment
-                </button>
-            </div>
-
-            <div
-                class="assistant-response"
-                id="assistantResponse"
-                aria-live="polite"
-            >
-                Select a topic to see basic guidance.
-            </div>
-
-            <p class="assistant-warning">
-                This demonstration provides general educational information.
-                Consult a qualified agricultural officer before treating a
-                serious crop disease.
-            </p>
-        </div>
+    <div class="welcome-actions">
+      <a class="btn block" href="home/home.html">Get Started</a>
+      <a class="btn secondary block" href="marketplace/marketplace.html">Browse Marketplace</a>
     </div>
 
-    <footer class="footer">
-        <strong>FarmSetu</strong>
-        <p>Connecting farmers, buyers, equipment and knowledge.</p>
-    </footer>
+  </section>
+</main>
 
-    <script src="js/app.js"></script>
 </body>
 </html>

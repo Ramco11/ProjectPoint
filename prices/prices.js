@@ -1,106 +1,76 @@
 "use strict";
 
-const priceData = [
-    {
-        crop: "Tomato",
-        market: "Rajkot",
-        minimum: 24,
-        average: 32,
-        maximum: 42,
-        trend: "Up"
-    },
-    {
-        crop: "Potato",
-        market: "Ahmedabad",
-        minimum: 18,
-        average: 25,
-        maximum: 31,
-        trend: "Stable"
-    },
-    {
-        crop: "Wheat",
-        market: "Jamnagar",
-        minimum: 25,
-        average: 29,
-        maximum: 34,
-        trend: "Up"
-    },
-    {
-        crop: "Groundnut",
-        market: "Junagadh",
-        minimum: 58,
-        average: 67,
-        maximum: 76,
-        trend: "Up"
-    },
-    {
-        crop: "Onion",
-        market: "Bhavnagar",
-        minimum: 21,
-        average: 27,
-        maximum: 35,
-        trend: "Down"
-    },
-    {
-        crop: "Cotton",
-        market: "Surendranagar",
-        minimum: 68,
-        average: 74,
-        maximum: 81,
-        trend: "Stable"
-    }
-];
+/* Demonstration market price data (₹ per quintal). Replace with a verified mandi API. */
 
-const priceSearch = document.getElementById("priceSearch");
-const priceTableBody = document.getElementById(
-    "priceTableBody"
-);
+document.addEventListener("DOMContentLoaded", () => {
 
-function renderPrices() {
-    const searchValue = priceSearch.value.trim().toLowerCase();
+  const { escapeHtml, formatCurrency } = FarmSetu;
 
-    const filteredPrices = priceData.filter(function (item) {
-        return `${item.crop} ${item.market}`
-            .toLowerCase()
-            .includes(searchValue);
+  const prices = [
+    { crop: "Wheat", icon: "🌾", market: "Rajkot APMC", min: 2350, avg: 2480, max: 2620, change: 1.8 },
+    { crop: "Groundnut", icon: "🥜", market: "Junagadh APMC", min: 5900, avg: 6350, max: 6800, change: 2.4 },
+    { crop: "Cotton", icon: "☁️", market: "Surendranagar APMC", min: 6700, avg: 7050, max: 7400, change: -1.2 },
+    { crop: "Onion", icon: "🧅", market: "Mahuva APMC", min: 900, avg: 1350, max: 1800, change: -3.5 },
+    { crop: "Potato", icon: "🥔", market: "Deesa APMC", min: 850, avg: 1100, max: 1400, change: 0.0 },
+    { crop: "Tomato", icon: "🍅", market: "Ahmedabad APMC", min: 1200, avg: 1900, max: 2600, change: 4.1 },
+    { crop: "Chickpea (Chana)", icon: "🫘", market: "Rajkot APMC", min: 5400, avg: 5700, max: 5950, change: 0.9 },
+    { crop: "Cumin (Jeera)", icon: "🌿", market: "Unjha APMC", min: 24500, avg: 26200, max: 28000, change: -0.6 },
+    { crop: "Castor Seed", icon: "🌱", market: "Patan APMC", min: 5700, avg: 5950, max: 6150, change: 1.1 },
+    { crop: "Mango (Kesar)", icon: "🥭", market: "Talala APMC", min: 3500, avg: 5200, max: 7500, change: 3.2 }
+  ];
+
+  const list = document.getElementById("priceList");
+  const search = document.getElementById("priceSearch");
+  const empty = document.getElementById("noPrices");
+  let trend = "all";
+
+  function trendOf(item) {
+    return item.change > 0 ? "up" : item.change < 0 ? "down" : "flat";
+  }
+
+  function render() {
+    const query = search.value.trim().toLowerCase();
+
+    const rows = prices.filter((item) =>
+      (item.crop + " " + item.market).toLowerCase().includes(query) &&
+      (trend === "all" || trendOf(item) === trend));
+
+    list.innerHTML = "";
+    empty.hidden = rows.length > 0;
+
+    rows.forEach((item) => {
+      const t = trendOf(item);
+      const label = t === "up" ? "▲ " + item.change.toFixed(1) + "%"
+        : t === "down" ? "▼ " + Math.abs(item.change).toFixed(1) + "%"
+        : "● Stable";
+
+      const card = document.createElement("article");
+      card.className = "price-card";
+      card.innerHTML = `
+        <div class="price-top">
+          <div class="price-icon">${item.icon}</div>
+          <div><b>${escapeHtml(item.crop)}</b><small>📍 ${escapeHtml(item.market)}</small></div>
+          <span class="trend price-${t}">${label}</span>
+        </div>
+        <div class="price-range">
+          <div><small>Minimum</small><strong>${formatCurrency(item.min)}</strong></div>
+          <div class="avg"><small>Average</small><strong>${formatCurrency(item.avg)}</strong></div>
+          <div><small>Maximum</small><strong>${formatCurrency(item.max)}</strong></div>
+        </div>`;
+      list.appendChild(card);
     });
+  }
 
-    priceTableBody.innerHTML = "";
+  search.addEventListener("input", render);
 
-    filteredPrices.forEach(function (item) {
-        const row = document.createElement("tr");
+  document.getElementById("trendChips").addEventListener("click", (event) => {
+    const chip = event.target.closest(".chip");
+    if (!chip) return;
+    document.querySelectorAll(".chip").forEach((c) => c.classList.remove("active"));
+    chip.classList.add("active");
+    trend = chip.dataset.trend;
+    render();
+  });
 
-        let trendClass = "";
-
-        if (item.trend === "Up") {
-            trendClass = "price-up";
-        }
-
-        if (item.trend === "Down") {
-            trendClass = "price-down";
-        }
-
-        row.innerHTML = `
-            <td><strong>${item.crop}</strong></td>
-            <td>${item.market}</td>
-            <td>₹${item.minimum}/kg</td>
-            <td>₹${item.average}/kg</td>
-            <td>₹${item.maximum}/kg</td>
-            <td class="${trendClass}">
-                ${
-                    item.trend === "Up"
-                        ? "↑ Up"
-                        : item.trend === "Down"
-                            ? "↓ Down"
-                            : "→ Stable"
-                }
-            </td>
-        `;
-
-        priceTableBody.appendChild(row);
-    });
-}
-
-priceSearch.addEventListener("input", renderPrices);
-
-renderPrices();
+  render();
+});

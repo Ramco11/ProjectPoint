@@ -425,19 +425,20 @@
 
       <div class="seller-info">
 
-        <b>Rameshbhai Patel ✓</b>
+        <b id="sellerName">Rameshbhai Patel ✓</b>
 
-        <span>
+        <span id="sellerRating">
           ⭐ 4.8 · 120 reviews
         </span>
 
-        <span>
+        <span id="sellerBadge">
           Verified FarmSetu Farmer
         </span>
 
       </div>
 
       <a
+        id="sellerProfileLink"
         class="seller-profile"
         href="../profile/profile.html"
       >
@@ -463,7 +464,7 @@
 
       <div class="detail-box">
         <small>Minimum Order</small>
-        <b>10 kg</b>
+        <b id="productMinimum">10 kg</b>
       </div>
 
       <div class="detail-box">
@@ -525,7 +526,7 @@
 
     <div class="card">
 
-      <b>📍 Rajkot, Gujarat</b>
+      <b id="farmLocation">📍 Rajkot, Gujarat</b>
 
       <p class="muted">
         Exact pickup/delivery details can be
@@ -568,7 +569,7 @@
 
 
   <div
-    id="productToast"
+    id="toast"
     class="toast"
   ></div>
 
@@ -577,242 +578,103 @@
 
 <script src="../js/app.js"></script>
 
+<script src="../js/app.js"></script>
+
 <script>
-document.addEventListener(
-  "DOMContentLoaded",
-  function () {
+document.addEventListener("DOMContentLoaded", function () {
 
-    const products = {
-      1: {
-        name: "Organic Tomatoes",
-        icon: "🍅",
-        price: "₹30 / kg",
-        category: "Vegetables",
-        location: "Rajkot, Gujarat",
-        quantity: "500 kg",
-        organic: true,
-        description:
-          "Fresh organic tomatoes grown locally using sustainable farming methods. Harvested at the right stage for freshness and quality. Available directly from the farmer."
-      },
+  const params = new URLSearchParams(window.location.search);
+  const product = FarmSetu.getProduct(params.get("id") || "1") || FarmSetu.getProduct(1);
+  const unit = product.unit || "kg";
+  const isDefaultFarmer = product.seller === "Rameshbhai Patel";
 
-      2: {
-        name: "Fresh Onions",
-        icon: "🧅",
-        price: "₹22 / kg",
-        category: "Vegetables",
-        location: "Jamnagar, Gujarat",
-        quantity: "900 kg",
-        organic: false,
-        description:
-          "Fresh farm onions supplied directly by a local farmer. Suitable for household, retail and bulk purchasing."
-      },
-
-      3: {
-        name: "Organic Wheat",
-        icon: "🌾",
-        price: "₹28 / kg",
-        category: "Grains",
-        location: "Surendranagar, Gujarat",
-        quantity: "1,200 kg",
-        organic: true,
-        description:
-          "Farm-grown wheat available for direct purchase. The listing is marked by the seller as organically grown."
-      }
-    };
-
-
-    const query =
-      new URLSearchParams(
-        window.location.search
-      );
-
-    const id =
-      query.get("id") || "1";
-
-    const product =
-      products[id] || products["1"];
-
-
-    document.getElementById(
-      "productIcon"
-    ).textContent =
-      product.icon;
-
-
-    document.getElementById(
-      "productName"
-    ).textContent =
-      product.name;
-
-
-    document.getElementById(
-      "productPrice"
-    ).textContent =
-      product.price;
-
-
-    document.getElementById(
-      "productCategory"
-    ).textContent =
-      product.category;
-
-
-    document.getElementById(
-      "productLocation"
-    ).textContent =
-      "📍 " + product.location;
-
-
-    document.getElementById(
-      "productQuantity"
-    ).textContent =
-      product.quantity;
-
-
-    document.getElementById(
-      "productDescription"
-    ).textContent =
-      product.description;
-
-
-    const organicBadge =
-      document.getElementById(
-        "organicBadge"
-      );
-
-    if (!product.organic) {
-      organicBadge.style.display =
-        "none";
-    }
-
-
-    const favoriteButton =
-      document.getElementById(
-        "favoriteButton"
-      );
-
-    favoriteButton.addEventListener(
-      "click",
-      function () {
-
-        const active =
-          favoriteButton.dataset.active
-          === "true";
-
-        if (active) {
-
-          favoriteButton.dataset.active =
-            "false";
-
-          favoriteButton.textContent =
-            "♡";
-
-          showProductToast(
-            "Removed from favorites"
-          );
-
-        } else {
-
-          favoriteButton.dataset.active =
-            "true";
-
-          favoriteButton.textContent =
-            "♥";
-
-          showProductToast(
-            "Added to favorites"
-          );
-
-        }
-
-      }
-    );
-
-
-    document.getElementById(
-      "chatButton"
-    ).addEventListener(
-      "click",
-      function () {
-
-        showProductToast(
-          "Seller chat will connect during the backend phase"
-        );
-
-      }
-    );
-
-
-    document.getElementById(
-      "offerButton"
-    ).addEventListener(
-      "click",
-      function () {
-
-        const offer =
-          window.prompt(
-            "Enter your offer price in ₹"
-          );
-
-        if (!offer) {
-          return;
-        }
-
-        showProductToast(
-          "Your ₹" +
-          offer +
-          " offer is ready to send"
-        );
-
-      }
-    );
-
-
-    document.getElementById(
-      "buyButton"
-    ).addEventListener(
-      "click",
-      function () {
-
-        showProductToast(
-          "Product added to your order"
-        );
-
-      }
-    );
-
-
-    function showProductToast(
-      message
-    ) {
-
-      const toast =
-        document.getElementById(
-          "productToast"
-        );
-
-      toast.textContent =
-        message;
-
-      toast.classList.add(
-        "show"
-      );
-
-      setTimeout(
-        function () {
-
-          toast.classList.remove(
-            "show"
-          );
-
-        },
-        2200
-      );
-
-    }
-
+  function set(id, text) {
+    document.getElementById(id).textContent = text;
   }
-);
+
+  document.title = "FarmSetu | " + product.name;
+  set("productIcon", product.icon || FarmSetu.categoryIcons[product.category] || "🧺");
+  set("productName", product.name);
+  set("productPrice", "₹" + Number(product.price).toLocaleString("en-IN") + " / " + unit);
+  set("productCategory", product.category);
+  set("productLocation", "📍 " + product.location);
+  set("farmLocation", "📍 " + product.location);
+  set("productQuantity", Number(product.quantity).toLocaleString("en-IN") + " " + unit);
+  set("productMinimum", (Number(product.minimumOrder) || 1) + " " + unit);
+  set("productDescription", product.description || "Fresh produce listed directly by the farmer.");
+  set("sellerName", product.seller + (isDefaultFarmer ? " ✓" : ""));
+
+  if (!isDefaultFarmer) {
+    set("sellerRating", "⭐ New seller");
+    set("sellerBadge", "FarmSetu community seller");
+    document.getElementById("sellerProfileLink").style.display = "none";
+  }
+
+  if (!product.organic) {
+    document.getElementById("organicBadge").style.display = "none";
+  }
+
+  /* Favourite (stored per product) */
+  const favoriteButton = document.getElementById("favoriteButton");
+  const favoritesKey = "farmsetu-favorite-products";
+  let favorites = FarmSetu.readJson(favoritesKey, []);
+
+  function paintFavorite() {
+    const active = favorites.includes(String(product.id));
+    favoriteButton.textContent = active ? "♥" : "♡";
+    favoriteButton.style.color = active ? "#d83232" : "";
+  }
+
+  favoriteButton.addEventListener("click", function () {
+    const id = String(product.id);
+    if (favorites.includes(id)) {
+      favorites = favorites.filter(function (item) { return item !== id; });
+      showProductToast("Removed from favorites");
+    } else {
+      favorites.push(id);
+      showProductToast("Added to favorites");
+    }
+    FarmSetu.writeJson(favoritesKey, favorites);
+    paintFavorite();
+  });
+  paintFavorite();
+
+  document.getElementById("chatButton").addEventListener("click", function () {
+    showProductToast("Seller chat will connect during the backend phase");
+  });
+
+  document.getElementById("offerButton").addEventListener("click", function () {
+    const offer = window.prompt("Enter your offer price in ₹ per " + unit, String(product.price));
+    if (offer === null || offer.trim() === "") return;
+    const value = Number(offer);
+    if (!Number.isFinite(value) || value <= 0) {
+      showProductToast("Enter a valid offer amount");
+      return;
+    }
+    showProductToast("Your ₹" + value + " / " + unit + " offer is ready. Sending needs seller authentication.");
+  });
+
+  document.getElementById("buyButton").addEventListener("click", function () {
+    const minimum = Number(product.minimumOrder) || 1;
+    const answer = window.prompt("How many " + unit + " do you want to buy? (minimum " + minimum + ")", String(minimum));
+    if (answer === null) return;
+    const quantity = Number(answer);
+    if (!Number.isFinite(quantity) || quantity < minimum) {
+      showProductToast("Minimum order is " + minimum + " " + unit);
+      return;
+    }
+    if (quantity > Number(product.quantity)) {
+      showProductToast("Only " + product.quantity + " " + unit + " available");
+      return;
+    }
+    FarmSetu.createOrder(product, quantity);
+    showProductToast("Order placed. Open My Orders to track it.");
+  });
+
+  function showProductToast(message) {
+    FarmSetu.showToast(message);
+  }
+});
 </script>
 
 </body>

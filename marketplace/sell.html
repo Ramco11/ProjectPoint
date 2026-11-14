@@ -1176,77 +1176,108 @@ document.addEventListener(
         }
 
 
+        const unit =
+          document.getElementById("unit").value;
+
+        const quantityUnit =
+          document.getElementById("quantityUnit").value;
+
+        if (unit !== quantityUnit) {
+
+          showError(
+            "Please use the same unit for price and quantity."
+          );
+
+          return;
+        }
+
+        const farmingMethod =
+          document.querySelector(
+            'input[name="farmingMethod"]:checked'
+          ).value;
+
+        const minimumOrder =
+          Number(
+            document.getElementById("minimumOrder").value
+          ) || 1;
+
+        const sellerProfile =
+          FarmSetu.readJson("farmsetu-seller-name", "");
+
+        const sellerName =
+          sellerProfile || "Rameshbhai Patel";
+
         const productData = {
 
-          productName:
-            productName,
+          id: Date.now(),
 
-          category:
-            category,
+          name: productName,
 
-          price:
-            price,
+          category: category,
 
-          unit:
-            document.getElementById(
-              "unit"
-            ).value,
+          price: price,
 
-          quantity:
-            quantity,
+          unit: unit,
 
-          quantityUnit:
-            document.getElementById(
-              "quantityUnit"
-            ).value,
+          quantity: quantity,
 
-          minimumOrder:
-            document.getElementById(
-              "minimumOrder"
-            ).value,
+          minimumOrder: minimumOrder,
+
+          organic: farmingMethod === "Organic",
+
+          location: location,
+
+          seller: sellerName,
+
+          icon:
+            FarmSetu.categoryIcons[category] || "🧺",
 
           description:
-            document.getElementById(
-              "description"
-            ).value.trim(),
-
-          farmingMethod:
-            document.querySelector(
-              'input[name="farmingMethod"]:checked'
-            ).value,
-
-          location:
-            location,
+            document.getElementById("description")
+              .value.trim() ||
+            "Listed directly by the farmer on FarmSetu.",
 
           delivery:
-            document.getElementById(
-              "delivery"
-            ).value,
+            document.getElementById("delivery").value,
 
-          photos:
-            selectedPhotos.length
+          createdAt: new Date().toISOString()
 
         };
 
+        const saved =
+          FarmSetu.addProduct(productData);
 
-        console.log(
-          "FarmSetu listing:",
-          productData
-        );
+        if (!saved) {
 
+          showError(
+            "Could not save the listing. Browser storage may be full or blocked."
+          );
+
+          return;
+        }
+
+        form.reset();
+
+        selectedPhotos = [];
+
+        renderPhotos();
 
         formMessage.className =
           "form-message success";
 
-
         formMessage.textContent =
-          "Product validated successfully. The frontend listing is ready. Permanent publishing will be connected to the FarmSetu database in the backend phase.";
-
+          "Product published. Opening the marketplace...";
 
         window.scrollTo({
           top: 0,
           behavior: "smooth"
         });
+
+        window.setTimeout(function () {
+
+          window.location.href = "marketplace.html";
+
+        }, 900);
 
       }
     );
